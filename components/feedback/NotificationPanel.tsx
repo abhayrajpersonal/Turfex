@@ -24,7 +24,8 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ notifications, is
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 w-80 md:w-96 bg-white/90 dark:bg-darkcard/90 backdrop-blur-xl shadow-2xl z-[60] transform transition-transform duration-300 animate-fade-in-up border-l border-white/20 dark:border-gray-700 flex flex-col">
+    // Fixed: z-index 70 to sit between chat (60) and modals (80)
+    <div className="fixed inset-y-0 right-0 w-80 md:w-96 bg-white/95 dark:bg-darkcard/95 backdrop-blur-xl shadow-2xl z-[70] transform transition-transform duration-300 animate-fade-in-up border-l border-white/20 dark:border-gray-700 flex flex-col">
        <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
           <h3 className="font-bold text-lg text-midnight dark:text-white flex items-center gap-2">
              <Bell size={20} /> Notifications

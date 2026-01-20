@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, ReactNode, useState } from 'react';
-import { Booking, OpenMatch, Notification, ActivityLog, Turf, Sport } from '../lib/types';
-import { MOCK_OPEN_MATCHES, MOCK_NOTIFICATIONS, MOCK_ACTIVITIES } from '../lib/mockData';
+import { Booking, OpenMatch, Notification, ActivityLog, Turf, Sport, Team } from '../lib/types';
+import { MOCK_OPEN_MATCHES, MOCK_NOTIFICATIONS, MOCK_ACTIVITIES, MOCK_TEAMS } from '../lib/mockData';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useAuth } from './AuthContext';
 
@@ -10,11 +10,13 @@ interface DataContextType {
   openMatches: OpenMatch[];
   notifications: Notification[];
   activities: ActivityLog[];
+  teams: Team[];
   addBooking: (booking: Booking) => void;
   cancelBooking: (bookingId: string) => void;
   joinMatch: (matchId: string) => void;
   addNotification: (notification: Notification) => void;
   clearNotifications: () => void;
+  createTeam: (team: Team) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -25,6 +27,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [openMatches, setOpenMatches] = useLocalStorage<OpenMatch[]>('turfex_matches', MOCK_OPEN_MATCHES);
   const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
   const [activities, setActivities] = useState<ActivityLog[]>(MOCK_ACTIVITIES);
+  const [teams, setTeams] = useLocalStorage<Team[]>('turfex_teams', MOCK_TEAMS);
 
   const addBooking = (booking: Booking) => {
     setBookings(prev => [booking, ...prev]);
@@ -52,17 +55,23 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setNotifications([]);
   };
 
+  const createTeam = (team: Team) => {
+    setTeams(prev => [team, ...prev]);
+  };
+
   return (
     <DataContext.Provider value={{ 
       bookings, 
       openMatches, 
       notifications, 
       activities, 
+      teams,
       addBooking, 
       cancelBooking, 
       joinMatch, 
       addNotification,
-      clearNotifications
+      clearNotifications,
+      createTeam
     }}>
       {children}
     </DataContext.Provider>

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
 import { UserType } from '../../lib/types';
@@ -14,16 +14,30 @@ const LoginScreen: React.FC = () => {
   const [otp, setOtp] = useState('');
   const [showOtpInput, setShowOtpInput] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const validatePhone = (phone: string) => {
+    const regex = /^[6-9]\d{9}$/; // Indian mobile number validation
+    return regex.test(phone);
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+
     if (!showOtpInput) {
-      if (phoneNumber.length < 10) return showToast("Please enter valid number", 'error');
+      if (!validatePhone(phoneNumber)) {
+        setError("Please enter a valid 10-digit mobile number starting with 6-9.");
+        return;
+      }
       setShowOtpInput(true);
     } else {
+      if (otp.length !== 4) {
+        setError("Please enter the 4-digit OTP.");
+        return;
+      }
       setIsSubmitting(true);
       await login(phoneNumber);
-      // Login function in context handles user state update
       setIsSubmitting(false);
     }
   };
@@ -61,16 +75,20 @@ const LoginScreen: React.FC = () => {
             {!showOtpInput ? (
               <div>
                 <label className="block text-xs font-bold text-courtgray uppercase tracking-wider mb-2">Phone Number</label>
-                <div className="flex">
+                <div className="flex group focus-within:ring-2 focus-within:ring-electric rounded-xl transition-all">
                   <span className="inline-flex items-center px-4 rounded-l-xl border border-r-0 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-midnight dark:text-gray-300 font-bold text-sm">
                     +91
                   </span>
                   <input
                     type="tel"
-                    className="flex-1 block w-full rounded-r-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-midnight dark:text-white p-3.5 focus:ring-2 focus:ring-electric/20 focus:border-electric transition-colors outline-none font-medium"
+                    className="flex-1 block w-full rounded-r-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-midnight dark:text-white p-3.5 focus:outline-none font-medium"
                     placeholder="98765 43210"
                     value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '');
+                      if (val.length <= 10) setPhoneNumber(val);
+                      setError(null);
+                    }}
                     required
                     autoFocus
                   />
@@ -86,16 +104,26 @@ const LoginScreen: React.FC = () => {
                   placeholder="••••"
                   maxLength={4}
                   value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    if (val.length <= 4) setOtp(val);
+                  }}
                   required
                   autoFocus
                 />
               </div>
             )}
             
+            {error && (
+              <div className="flex items-center gap-2 text-red-500 text-xs font-medium bg-red-50 dark:bg-red-900/10 p-3 rounded-lg">
+                <AlertCircle size={14} />
+                {error}
+              </div>
+            )}
+
             <button
               type="submit"
-              className="w-full bg-electric text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/30 flex justify-center items-center transform active:scale-95"
+              className="w-full bg-electric text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/30 flex justify-center items-center transform active:scale-95 disabled:opacity-50 disabled:scale-100"
               disabled={isLoading || isSubmitting}
             >
               {(isLoading || isSubmitting) ? <Loader2 className="animate-spin" /> : (showOtpInput ? 'Verify & Login' : 'Get OTP')}
@@ -104,7 +132,7 @@ const LoginScreen: React.FC = () => {
             {showOtpInput && (
               <button 
                 type="button" 
-                onClick={() => setShowOtpInput(false)}
+                onClick={() => { setShowOtpInput(false); setOtp(''); setError(null); }}
                 className="w-full text-sm text-courtgray font-medium mt-4 hover:text-midnight dark:hover:text-white transition-colors"
               >
                 Change phone number

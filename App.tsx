@@ -13,6 +13,7 @@ import MyMatchesScreen from './features/booking/MyMatchesScreen';
 import LeaderboardScreen from './features/social/LeaderboardScreen';
 import SocialScreen from './features/social/SocialScreen';
 import DashboardScreen from './features/dashboard/DashboardScreen';
+import ScoreboardScreen from './features/scoreboard/ScoreboardScreen';
 
 // Providers
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -48,6 +49,7 @@ const TurfexApp = () => {
     switch (activeTab) {
       case 'discover': return <DiscoverScreen />;
       case 'matches': return <MyMatchesScreen />;
+      case 'scoreboard': return <ScoreboardScreen />;
       case 'social': return <SocialScreen />;
       case 'leaderboard': return <LeaderboardScreen />;
       case 'dashboard': 
@@ -70,11 +72,11 @@ const TurfexApp = () => {
         {renderContent()}
       </div>
 
-      {/* Floating Chat Button */}
+      {/* Floating Chat Button - Moved UP to bottom-24 on mobile to clear nav pill */}
       {user.user_type === UserType.PLAYER && (
           <button 
              onClick={() => setIsChatOpen(!isChatOpen)}
-             className="fixed bottom-20 md:bottom-6 right-6 bg-electric text-white p-4 rounded-full shadow-lg hover:bg-blue-600 transition-colors z-40"
+             className="fixed bottom-24 md:bottom-6 right-6 bg-electric text-white p-4 rounded-full shadow-lg shadow-blue-500/40 hover:bg-blue-600 transition-all z-40 active:scale-95"
           >
              {isChatOpen ? <X /> : <MessageCircle />}
           </button>

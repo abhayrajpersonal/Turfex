@@ -2,38 +2,37 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Turfex - Social Sports Booking</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script>
       tailwind.config = {
         darkMode: 'class',
         theme: {
           extend: {
             colors: {
-              // OFFICIAL BRAND KIT COLORS
-              electric: '#0057FF',    // Primary Blue
-              turfgreen: '#00A859',   // Primary Green
-              sparklime: '#CCFF00',   // Accent Lime
-              midnight: '#1A1A1A',    // Carbon Black (Text/Dark BG)
-              courtgray: '#A0A4B8',   // Secondary UI Gray
-              offwhite: '#F8F9FC',    // Background Off-White
+              electric: '#0057FF',
+              turfgreen: '#00A859',
+              sparklime: '#CCFF00',
+              midnight: '#1A1A1A',
+              courtgray: '#A0A4B8',
+              offwhite: '#F8F9FC',
               purewhite: '#FFFFFF',
-              
-              // Legacy/Semantic mapping
-              lime: '#CCFF00',        // Mapping standard lime to brand lime
-              coral: '#FF7043',       // Kept for specific alerts if needed
-              
-              // Dark mode specific aliases
+              lime: '#CCFF00',
+              coral: '#FF7043',
               darkbg: '#121212',
               darkcard: '#1E1E1E',
             },
             fontFamily: {
               sans: ['Poppins', 'sans-serif'],
               display: ['Fredoka', 'sans-serif'],
+            },
+            padding: {
+              'safe-bottom': 'env(safe-area-inset-bottom)',
             }
           }
         }
@@ -41,56 +40,36 @@
     </script>
     <style>
       body {
-        background-color: #F8F9FC; /* Brand Off-White */
-        color: #1A1A1A; /* Brand Carbon Black */
+        background-color: #F8F9FC;
+        color: #1A1A1A;
+        -webkit-tap-highlight-color: transparent;
       }
       .dark body {
         background-color: #121212;
         color: #FDFDFD;
       }
-      /* Custom Scrollbar */
       ::-webkit-scrollbar {
-        width: 8px;
+        width: 6px;
+        height: 6px;
       }
-      ::-webkit-scrollbar-track {
-        background: #f1f1f1; 
-      }
-      .dark ::-webkit-scrollbar-track {
-        background: #2E2E2E;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #ccc; 
-        border-radius: 4px;
-      }
-      .dark ::-webkit-scrollbar-thumb {
-        background: #555;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #888; 
-      }
+      ::-webkit-scrollbar-track { background: transparent; }
+      .dark ::-webkit-scrollbar-track { background: #2E2E2E; }
+      ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 10px; }
+      .dark ::-webkit-scrollbar-thumb { background: #4B5563; }
+      ::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
+      .scrollbar-hide::-webkit-scrollbar { display: none; }
+      .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
       
-      /* Animations */
-      @keyframes scale-in {
-        from { transform: scale(0.95); opacity: 0; }
-        to { transform: scale(1); opacity: 1; }
-      }
-      @keyframes fade-in-up {
-        from { transform: translate(-50%, 20px); opacity: 0; }
-        to { transform: translate(-50%, 0); opacity: 1; }
-      }
+      @keyframes scale-in { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+      @keyframes fade-in-up { from { transform: translate(-50%, 20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
       .animate-scale-in { animation: scale-in 0.2s ease-out; }
       .animate-fade-in-up { animation: fade-in-up 0.3s ease-out; }
-
-      /* Accessibility: Global Focus Styles */
-      :focus-visible {
-        outline: 2px solid #0057FF;
-        outline-offset: 2px;
-      }
+      :focus-visible { outline: 2px solid #0057FF; outline-offset: 2px; }
+      button:focus:not(:focus-visible) { outline: none; }
       
-      /* Reset for mouse users if desired, but focus-visible usually handles this */
-      button:focus:not(:focus-visible) {
-        outline: none;
-      }
+      /* Leaflet Custom Overrides */
+      .leaflet-popup-content-wrapper { border-radius: 12px; padding: 0; overflow: hidden; }
+      .leaflet-popup-content { margin: 0; }
     </style>
   <script type="importmap">
 {
@@ -100,7 +79,10 @@
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
     "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
     "recharts": "https://esm.sh/recharts@^3.6.0",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.90.1"
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.90.1",
+    "leaflet": "https://esm.sh/leaflet@1.9.4",
+    "clsx": "https://esm.sh/clsx@2.1.0",
+    "tailwind-merge": "https://esm.sh/tailwind-merge@2.2.1"
   }
 }
 </script>

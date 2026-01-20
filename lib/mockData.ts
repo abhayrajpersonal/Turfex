@@ -12,12 +12,27 @@ export const MOCK_USER: UserProfile = {
   user_type: UserType.PLAYER,
   kyc_status: KycStatus.VERIFIED,
   turfex_points: 1250,
-  tier: UserTier.FREE, // Changed to FREE so Upgrade to Gold is visible
+  tier: UserTier.FREE, 
   badges: ['Night Owl', 'Striker', 'Playmaker'],
   wallet_balance: 1500,
   streak_days: 12,
-  referral_code: 'ALEX123'
+  referral_code: 'ALEX123',
+  stats: {
+    matches_played: 45,
+    matches_won: 28,
+    man_of_the_match: 5,
+    total_score: 122, // Goals/Runs mixed context for demo
+    mvp_badges: 3
+  }
 };
+
+export const MOCK_SEARCHABLE_USERS = [
+    { id: 'u1', username: 'ace_striker', avatar: 'https://picsum.photos/200/200' },
+    { id: 'u2', username: 'pickle_rick', avatar: 'https://picsum.photos/50/50?r=2' },
+    { id: 'u3', username: 'net_master', avatar: 'https://picsum.photos/50/50?r=3' },
+    { id: 'u4', username: 'speedy', avatar: 'https://picsum.photos/50/50?r=4' },
+    { id: 'o1', username: 'turf_king', avatar: 'https://picsum.photos/50?r=99' }
+];
 
 export const MOCK_OWNER_USER: UserProfile = {
   id: 'o1',
@@ -33,7 +48,14 @@ export const MOCK_OWNER_USER: UserProfile = {
   badges: [],
   wallet_balance: 25000,
   streak_days: 0,
-  referral_code: 'OWNER99'
+  referral_code: 'OWNER99',
+  stats: {
+      matches_played: 0,
+      matches_won: 0,
+      man_of_the_match: 0,
+      total_score: 0,
+      mvp_badges: 0
+  }
 };
 
 export const MOCK_TURFS: Turf[] = [
@@ -103,6 +125,28 @@ export const MOCK_TURFS: Turf[] = [
 
 export const MOCK_OPEN_MATCHES: OpenMatch[] = [
   {
+    id: 'm_live_1',
+    host_id: 'u1',
+    turf_id: 't3',
+    sport: Sport.CRICKET,
+    required_players: 12,
+    joined_players: ['u1', 'u2', 'u3', 'u4'],
+    start_time: new Date().toISOString(),
+    status: 'LIVE',
+    turf: MOCK_TURFS[2],
+    host: MOCK_USER,
+    share_token: 'cricket-live-123',
+    scoreboard: {
+        team_a_name: 'Super Strikers',
+        team_b_name: 'Powai Kings',
+        cricket: {
+            team_a: { runs: 45, wickets: 2, overs: 4, balls: 2, is_batting_first: true },
+            team_b: { runs: 0, wickets: 0, overs: 0, balls: 0, is_batting_first: false }
+        },
+        last_update: 'Just now'
+    }
+  },
+  {
     id: 'm1',
     host_id: 'u2',
     turf_id: 't2',
@@ -136,9 +180,9 @@ export const MOCK_LEADERBOARD: LeaderboardEntry[] = [
 ];
 
 export const MOCK_TEAMS: Team[] = [
-  { id: 'tm1', name: 'Mumbai Indians FC', logo_url: 'https://picsum.photos/200?r=10', captain_id: 'u1', members: ['u1', 'u2', 'u3'], matches_played: 12, wins: 8, city: 'Mumbai' },
-  { id: 'tm2', name: 'Bandra Blasters', logo_url: 'https://picsum.photos/200?r=11', captain_id: 'u4', members: ['u4', 'u5', 'u6'], matches_played: 10, wins: 5, city: 'Mumbai' },
-  { id: 'tm3', name: 'Powai Panthers', logo_url: 'https://picsum.photos/200?r=12', captain_id: 'u7', members: ['u7', 'u8'], matches_played: 15, wins: 10, city: 'Mumbai' },
+  { id: 'tm1', name: 'Mumbai Indians FC', logo_url: 'https://picsum.photos/200?r=10', captain_id: 'u1', members: ['u1', 'u2', 'u3'], matches_played: 12, wins: 8, city: 'Mumbai', primary_sport: Sport.FOOTBALL },
+  { id: 'tm2', name: 'Bandra Blasters', logo_url: 'https://picsum.photos/200?r=11', captain_id: 'u4', members: ['u4', 'u5', 'u6'], matches_played: 10, wins: 5, city: 'Mumbai', primary_sport: Sport.CRICKET },
+  { id: 'tm3', name: 'Powai Panthers', logo_url: 'https://picsum.photos/200?r=12', captain_id: 'u7', members: ['u7', 'u8'], matches_played: 15, wins: 10, city: 'Mumbai', primary_sport: Sport.FOOTBALL },
 ];
 
 export const MOCK_CHATS: ChatRoom[] = [

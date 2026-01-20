@@ -1,14 +1,15 @@
 
 import React from 'react';
-import { Crown, Wallet, Shield, BadgeCheck, Copy, UserPlus, Flame, ChevronRight, Star } from 'lucide-react';
+import { Crown, Wallet, Shield, BadgeCheck, Copy, UserPlus, Flame, ChevronRight, Star, Users, Plus, Award, BarChart2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { useUI } from '../../context/UIContext';
 import { UserTier } from '../../lib/types';
+import { SPORTS_ICONS } from '../../lib/constants';
 
 const SocialScreen: React.FC = () => {
   const { user } = useAuth();
-  const { activities } = useData();
+  const { activities, teams } = useData();
   const { setActiveModal, showToast } = useUI();
 
   const copyReferral = () => {
@@ -25,8 +26,11 @@ const SocialScreen: React.FC = () => {
   const pointsRequired = user?.tier === UserTier.FREE ? 2000 : user?.tier === UserTier.GOLD ? 5000 : user?.turfex_points;
   const progressPercent = Math.min(100, (user?.turfex_points || 0) / (pointsRequired || 1) * 100);
 
+  // Filter teams where user is a member
+  const myTeams = teams.filter(t => t.members.includes(user?.id || ''));
+
   return (
-    <div className="space-y-6 animate-fade-in-up">
+    <div className="space-y-6 animate-fade-in-up pb-20">
       <div className="bg-white dark:bg-darkcard rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm relative overflow-hidden">
          {/* Background Decor */}
          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-bl-full -z-0" />
@@ -95,6 +99,72 @@ const SocialScreen: React.FC = () => {
                  </div>
                )}
              </div>
+         </div>
+      </div>
+      
+      {/* CAREER STATS */}
+      {user?.stats && (
+          <div className="bg-white dark:bg-darkcard p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+             <div className="flex justify-between items-center mb-6">
+                 <h3 className="font-bold text-lg text-midnight dark:text-white flex items-center gap-2">
+                     <BarChart2 size={20} className="text-electric" /> Career Stats
+                 </h3>
+             </div>
+             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                 <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl text-center">
+                     <p className="text-xs text-gray-400 font-bold uppercase mb-1">Matches</p>
+                     <p className="text-2xl font-black text-midnight dark:text-white">{user.stats.matches_played}</p>
+                 </div>
+                 <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl text-center">
+                     <p className="text-xs text-gray-400 font-bold uppercase mb-1">Win Rate</p>
+                     <p className="text-2xl font-black text-green-500">{((user.stats.matches_won / user.stats.matches_played) * 100).toFixed(0)}%</p>
+                 </div>
+                 <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl text-center">
+                     <p className="text-xs text-gray-400 font-bold uppercase mb-1">M.O.M</p>
+                     <p className="text-2xl font-black text-orange-500 flex items-center justify-center gap-1"><Award size={18}/> {user.stats.man_of_the_match}</p>
+                 </div>
+                 <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl text-center">
+                     <p className="text-xs text-gray-400 font-bold uppercase mb-1">Total Score</p>
+                     <p className="text-2xl font-black text-blue-500">{user.stats.total_score}</p>
+                 </div>
+             </div>
+          </div>
+      )}
+
+      {/* My Teams Section */}
+      <div className="bg-white dark:bg-darkcard p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+         <div className="flex justify-between items-center mb-4">
+             <h3 className="font-bold text-lg text-midnight dark:text-white flex items-center gap-2">
+                 <Users size={20} className="text-electric" /> My Teams
+             </h3>
+             <button 
+               onClick={() => setActiveModal('create_team')}
+               className="text-xs bg-electric/10 text-electric px-3 py-1.5 rounded-lg font-bold hover:bg-electric/20 transition-colors flex items-center gap-1"
+             >
+                 <Plus size={14} /> Create Team
+             </button>
+         </div>
+         
+         <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide snap-x">
+             {myTeams.length > 0 ? myTeams.map(team => (
+                 <div key={team.id} className="min-w-[200px] bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 snap-start">
+                     <div className="flex items-center gap-3 mb-3">
+                         <img src={team.logo_url} className="w-10 h-10 rounded-full bg-white object-cover shadow-sm" alt={team.name} />
+                         <div>
+                             <h4 className="font-bold text-sm text-midnight dark:text-white truncate w-24">{team.name}</h4>
+                             <span className="text-[10px] text-gray-500 font-bold uppercase">{SPORTS_ICONS[team.primary_sport]} {team.primary_sport}</span>
+                         </div>
+                     </div>
+                     <div className="flex justify-between text-xs text-gray-500 border-t border-gray-200 dark:border-gray-700 pt-3">
+                         <span>{team.members.length} Members</span>
+                         <span className="font-bold text-green-600">{team.wins} Wins</span>
+                     </div>
+                 </div>
+             )) : (
+                 <div className="w-full text-center py-6 text-gray-400 text-sm">
+                     You aren't part of any teams yet. Create one!
+                 </div>
+             )}
          </div>
       </div>
 

@@ -47,7 +47,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ isOpen, onClose, chats, user })
   };
 
   return (
-    <div className="fixed bottom-24 md:bottom-20 right-4 w-96 bg-white/95 dark:bg-darkcard/95 backdrop-blur-xl border border-white/20 dark:border-gray-700 shadow-2xl rounded-3xl z-50 flex flex-col overflow-hidden animate-scale-in h-[550px]">
+    // Fixed: z-index 60 to sit above nav/header but below notification/modals
+    // Fixed: width constraint for mobile view (90vw instead of fixed 96)
+    // Fixed: bottom positioning for mobile to avoid overlap
+    <div className="fixed bottom-24 md:bottom-20 right-4 w-[90vw] md:w-96 bg-white/95 dark:bg-darkcard/95 backdrop-blur-xl border border-white/20 dark:border-gray-700 shadow-2xl rounded-3xl z-[60] flex flex-col overflow-hidden animate-scale-in h-[550px] max-h-[70vh] md:max-h-[600px]">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 text-white flex justify-between items-center shadow-md z-10">
         <h3 className="font-bold flex items-center gap-3">

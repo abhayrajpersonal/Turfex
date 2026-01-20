@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { User, Home, Calendar, Trophy, MapPin, Menu, X, LogOut, Briefcase, Moon, Sun, Crown, Bell } from 'lucide-react';
+import { User, Home, Calendar, Trophy, MapPin, Menu, X, LogOut, Briefcase, Moon, Sun, Crown, Bell, Gamepad2 } from 'lucide-react';
 import { UserProfile, UserType, UserTier } from '../../lib/types';
 import Logo from '../common/Logo';
 
@@ -59,7 +59,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activeTab, se
   return (
     <div className="min-h-screen bg-offwhite dark:bg-darkbg flex flex-col md:flex-row font-sans transition-colors duration-200 selection:bg-electric selection:text-white">
       {/* Mobile Header (Glassmorphism) */}
-      <div className="md:hidden bg-white/80 dark:bg-darkcard/80 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-800/50 p-4 flex justify-between items-center sticky top-0 z-50">
+      <div className="md:hidden bg-white/90 dark:bg-darkcard/90 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-800/50 p-4 flex justify-between items-center sticky top-0 z-[40]">
         <Logo size={32} />
         <div className="flex items-center gap-3">
            <button 
@@ -90,10 +90,11 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activeTab, se
 
       {/* Mobile Menu Overlay */}
       {isMenuOpen && (
-        <div className="md:hidden fixed inset-0 bg-white/95 dark:bg-darkbg/95 backdrop-blur-xl z-40 pt-24 px-6 animate-scale-in">
+        <div className="md:hidden fixed inset-0 bg-white/95 dark:bg-darkbg/95 backdrop-blur-xl z-[45] pt-24 px-6 animate-scale-in">
            <nav className="space-y-3">
             <NavItem id="discover" icon={MapPin} label="Discover" />
             <NavItem id="matches" icon={Calendar} label="My Matches" />
+            <NavItem id="scoreboard" icon={Gamepad2} label="Scoreboard" />
             <NavItem id="social" icon={User} label="Social & Profile" />
             <NavItem id="leaderboard" icon={Trophy} label="Leaderboard" />
             {user?.user_type === UserType.OWNER && (
@@ -113,7 +114,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activeTab, se
       )}
 
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-72 bg-white dark:bg-darkcard border-r border-gray-200 dark:border-gray-800 h-screen sticky top-0 z-10">
+      <aside className="hidden md:flex flex-col w-72 bg-white dark:bg-darkcard border-r border-gray-200 dark:border-gray-800 h-screen sticky top-0 z-30">
         <div className="p-8">
           <Logo size={40} />
           <p className="text-xs text-courtgray mt-4 font-bold tracking-widest uppercase">Sports Community</p>
@@ -122,6 +123,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activeTab, se
         <nav className="flex-1 px-6 space-y-2">
           <NavItem id="discover" icon={MapPin} label="Discover" />
           <NavItem id="matches" icon={Calendar} label="My Matches" />
+          <NavItem id="scoreboard" icon={Gamepad2} label="Scoreboard" />
           <NavItem id="social" icon={User} label="Social & Profile" />
           <NavItem id="leaderboard" icon={Trophy} label="Leaderboard" />
           {user?.user_type === UserType.OWNER && (
@@ -129,14 +131,13 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activeTab, se
           )}
         </nav>
 
-        {/* Upgrade Button - Visible ONLY to Players who are NOT Gold yet */}
+        {/* Upgrade Button */}
         {user?.user_type === UserType.PLAYER && user?.tier !== UserTier.GOLD && (
           <div className="px-6 mb-6">
             <button 
               onClick={onUpgrade}
               className="w-full bg-gradient-to-r from-turfgreen to-emerald-600 text-white p-4 rounded-2xl shadow-lg shadow-green-500/20 flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all duration-300 group outline-none focus-visible:ring-4 focus-visible:ring-turfgreen/50 relative overflow-hidden"
             >
-               {/* Sparkle effect */}
               <div className="absolute top-0 right-0 p-2 opacity-50">
                  <svg width="20" height="20" viewBox="0 0 24 24" fill="#CCFF00"><path d="M12 0L14 10L24 12L14 14L12 24L10 14L0 12L10 10Z"/></svg>
               </div>
@@ -188,44 +189,50 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activeTab, se
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto bg-offwhite dark:bg-darkbg text-midnight dark:text-white relative">
-        <div className="p-4 md:p-8 pb-32 md:pb-8 max-w-6xl mx-auto">
+      {/* Main Content Area - Increased bottom padding for mobile nav */}
+      <main className="flex-1 overflow-y-auto bg-offwhite dark:bg-darkbg text-midnight dark:text-white relative z-0">
+        <div className="p-4 md:p-8 pb-36 md:pb-8 max-w-6xl mx-auto">
            {children}
         </div>
       </main>
 
-      {/* Floating Mobile Tab Bar (Glass Pill) */}
-      <div className="md:hidden fixed bottom-6 left-6 right-6 z-50">
-        <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-white/20 dark:border-gray-700/50 rounded-full shadow-2xl shadow-black/10 px-6 py-4 flex justify-between items-center">
+      {/* Floating Mobile Tab Bar - Fixed z-index & positioning */}
+      <div className="md:hidden fixed bottom-6 left-4 right-4 z-[40]">
+        <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border border-white/20 dark:border-gray-700/50 rounded-2xl shadow-2xl shadow-black/20 px-2 py-3 flex justify-between items-center">
             <button 
               onClick={() => setActiveTab('discover')} 
               aria-label="Discover"
-              aria-current={activeTab === 'discover' ? 'page' : undefined}
-              className={`flex flex-col items-center justify-center min-w-[48px] min-h-[48px] transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-electric rounded-xl ${activeTab === 'discover' ? 'text-electric -translate-y-1' : 'text-courtgray'}`}
+              className={`flex flex-col items-center justify-center w-14 transition-all duration-300 outline-none ${activeTab === 'discover' ? 'text-electric -translate-y-1' : 'text-gray-400 hover:text-gray-600'}`}
             >
-              <MapPin size={24} className={activeTab === 'discover' ? 'fill-current' : ''} aria-hidden="true" />
-              {activeTab === 'discover' && <span className="text-[10px] font-bold mt-1 animate-scale-in">Explore</span>}
+              <MapPin size={22} className={activeTab === 'discover' ? 'fill-current' : ''} />
+              {activeTab === 'discover' && <span className="text-[9px] font-bold mt-1 animate-scale-in">Explore</span>}
             </button>
             
             <button 
               onClick={() => setActiveTab('matches')} 
               aria-label="Matches"
-              aria-current={activeTab === 'matches' ? 'page' : undefined}
-              className={`flex flex-col items-center justify-center min-w-[48px] min-h-[48px] transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-electric rounded-xl ${activeTab === 'matches' ? 'text-electric -translate-y-1' : 'text-courtgray'}`}
+              className={`flex flex-col items-center justify-center w-14 transition-all duration-300 outline-none ${activeTab === 'matches' ? 'text-electric -translate-y-1' : 'text-gray-400 hover:text-gray-600'}`}
             >
-              <Calendar size={24} className={activeTab === 'matches' ? 'fill-current' : ''} aria-hidden="true" />
-              {activeTab === 'matches' && <span className="text-[10px] font-bold mt-1 animate-scale-in">Matches</span>}
+              <Calendar size={22} className={activeTab === 'matches' ? 'fill-current' : ''} />
+              {activeTab === 'matches' && <span className="text-[9px] font-bold mt-1 animate-scale-in">Matches</span>}
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('scoreboard')} 
+              aria-label="Scoreboard"
+              className={`flex flex-col items-center justify-center w-14 transition-all duration-300 outline-none ${activeTab === 'scoreboard' ? 'text-electric -translate-y-1' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              <Gamepad2 size={24} className={activeTab === 'scoreboard' ? 'fill-current' : ''} />
+              {activeTab === 'scoreboard' && <span className="text-[9px] font-bold mt-1 animate-scale-in">Game</span>}
             </button>
             
             <button 
               onClick={() => setActiveTab('social')} 
               aria-label="Profile"
-              aria-current={activeTab === 'social' ? 'page' : undefined}
-              className={`flex flex-col items-center justify-center min-w-[48px] min-h-[48px] transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-electric rounded-xl ${activeTab === 'social' ? 'text-electric -translate-y-1' : 'text-courtgray'}`}
+              className={`flex flex-col items-center justify-center w-14 transition-all duration-300 outline-none ${activeTab === 'social' ? 'text-electric -translate-y-1' : 'text-gray-400 hover:text-gray-600'}`}
             >
-              <User size={24} className={activeTab === 'social' ? 'fill-current' : ''} aria-hidden="true" />
-              {activeTab === 'social' && <span className="text-[10px] font-bold mt-1 animate-scale-in">Profile</span>}
+              <User size={22} className={activeTab === 'social' ? 'fill-current' : ''} />
+              {activeTab === 'social' && <span className="text-[9px] font-bold mt-1 animate-scale-in">Profile</span>}
             </button>
         </div>
       </div>

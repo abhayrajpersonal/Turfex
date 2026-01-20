@@ -1,8 +1,11 @@
 
 import React, { useState, useMemo } from 'react';
-import { X, Calendar, Repeat, Users, ShoppingBag, AlertCircle, UserCheck, Flag, Zap, Plus, Trash2, ArrowRight, ArrowLeft, Check } from 'lucide-react';
+import { X, Calendar, Repeat, Users, ShoppingBag, AlertCircle, UserCheck, Flag, Zap, Plus, Trash2, ArrowRight, ArrowLeft, Check, Link, Copy, Search, Loader2 } from 'lucide-react';
 import { Turf, Sport, Booking } from '../lib/types';
 import Logo from './common/Logo';
+import CustomCalendar from './common/CustomCalendar';
+import { useUI } from '../context/UIContext';
+import { MOCK_SEARCHABLE_USERS } from '../lib/mockData';
 
 interface BookingModalProps {
   turf: Turf;
@@ -13,6 +16,7 @@ interface BookingModalProps {
 }
 
 const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onClose, onConfirm, onWaitlist }) => {
+  const { showToast } = useUI();
   const [step, setStep] = useState(1);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
@@ -21,8 +25,13 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
   // Features State
   const [isRecurring, setIsRecurring] = useState(false);
   const [isSplit, setIsSplit] = useState(false);
-  const [splitUsers, setSplitUsers] = useState<string[]>([]);
+  
+  // Enhanced Split User State
+  const [splitUsers, setSplitUsers] = useState<{ name: string; avatar?: string; isVerified: boolean }[]>([]);
   const [newSplitUser, setNewSplitUser] = useState('');
+  const [isSearchingUser, setIsSearchingUser] = useState(false);
+  const [splitLinkCopied, setSplitLinkCopied] = useState(false);
+
   const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
   const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
 
@@ -58,8 +67,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
   };
 
   const basePrice = selectedSlot ? getSlotPrice(selectedSlot) : turf.price_per_hour;
-  const isPeakHour = basePrice > turf.price_per_hour;
-
+  
   const equipmentCost = turf.rental_equipment.filter(e => selectedEquipment.includes(e.id)).reduce((acc, curr) => acc + curr.price, 0);
   const addOnCost = (selectedAddOns.includes('COACH') ? 500 : 0) + (selectedAddOns.includes('REFEREE') ? 300 : 0);
   const totalCost = basePrice + equipmentCost + addOnCost;
@@ -70,16 +78,54 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
       if (isSelectedSlotBooked) {
         onWaitlist(date, selectedSlot, selectedSport);
       } else {
-        onConfirm(date, selectedSlot, selectedSport, selectedAddOns, selectedEquipment, totalCost, isSplit ? splitUsers : []);
+        onConfirm(
+            date, 
+            selectedSlot, 
+            selectedSport, 
+            selectedAddOns, 
+            selectedEquipment, 
+            totalCost, 
+            isSplit ? splitUsers.map(u => u.name) : []
+        );
       }
     }
   };
 
+  const findUserByUsername = (username: string) => {
+    const term = username.toLowerCase().replace('@', '');
+    return MOCK_SEARCHABLE_USERS.find(u => u.username.toLowerCase() === term);
+  };
+
   const addSplitUser = () => {
-    if (newSplitUser.trim()) {
-      setSplitUsers([...splitUsers, newSplitUser.trim()]);
-      setNewSplitUser('');
+    if (!newSplitUser.trim()) return;
+    const rawInput = newSplitUser.trim();
+    
+    if (splitUsers.some(u => u.name.toLowerCase() === rawInput.toLowerCase() || u.name.toLowerCase() === `@${rawInput.toLowerCase()}`)) {
+        showToast("User already added", 'error');
+        return;
     }
+
+    setIsSearchingUser(true);
+    
+    setTimeout(() => {
+        const foundUser = findUserByUsername(rawInput);
+        if (foundUser) {
+            setSplitUsers([...splitUsers, { name: `@${foundUser.username}`, avatar: foundUser.avatar, isVerified: true }]);
+            showToast(`Added ${foundUser.username}`);
+        } else {
+            // Fallback for phone numbers or unknown users
+            setSplitUsers([...splitUsers, { name: rawInput, isVerified: false }]);
+        }
+        setNewSplitUser('');
+        setIsSearchingUser(false);
+    }, 400);
+  };
+
+  const copySplitLink = () => {
+    navigator.clipboard.writeText(`https://turfex.app/pay/split/${Math.random().toString(36).substring(7)}`);
+    setSplitLinkCopied(true);
+    showToast("Split link copied!");
+    setTimeout(() => setSplitLinkCopied(false), 2000);
   };
 
   const nextStep = () => setStep(s => s + 1);
@@ -108,27 +154,20 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
       </div>
 
       <div>
-        <label className="block text-xs font-bold text-courtgray uppercase tracking-wider mb-3">Date & Type</label>
-        <div className="grid grid-cols-1 gap-4">
-          <div className="relative">
-            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-courtgray" size={20} aria-hidden="true" />
-            <input 
-              type="date" 
-              value={date}
-              onChange={(e) => { setDate(e.target.value); setSelectedSlot(null); }}
-              aria-label="Booking Date"
-              className="w-full pl-12 pr-4 py-4 border border-gray-200 dark:border-gray-700 bg-offwhite dark:bg-gray-800 text-midnight dark:text-white rounded-xl text-base font-medium focus:ring-2 focus:ring-electric/20 outline-none transition-all"
-            />
-          </div>
-          <button 
-            onClick={() => setIsRecurring(!isRecurring)}
-            aria-pressed={isRecurring}
-            className={`w-full py-4 px-4 rounded-xl text-sm font-medium border flex items-center justify-center gap-2 transition-all outline-none focus-visible:ring-2 focus-visible:ring-electric ${isRecurring ? 'bg-electric/10 border-electric text-electric' : 'bg-offwhite dark:bg-gray-800 border-transparent text-gray-600 dark:text-gray-300'}`}
-           >
-             <Repeat size={18} aria-hidden="true" />
-             {isRecurring ? 'Recurring Booking (Weekly)' : 'One-time Booking'}
-           </button>
-        </div>
+        <label className="block text-xs font-bold text-courtgray uppercase tracking-wider mb-3">Select Date</label>
+        <CustomCalendar 
+           selectedDate={date} 
+           onSelect={(d) => { setDate(d); setSelectedSlot(null); }} 
+           minDate={new Date().toISOString().split('T')[0]} 
+        />
+        <button 
+          onClick={() => setIsRecurring(!isRecurring)}
+          aria-pressed={isRecurring}
+          className={`w-full mt-4 py-3 px-4 rounded-xl text-sm font-medium border flex items-center justify-center gap-2 transition-all outline-none focus-visible:ring-2 focus-visible:ring-electric ${isRecurring ? 'bg-electric/10 border-electric text-electric' : 'bg-offwhite dark:bg-gray-800 border-transparent text-gray-600 dark:text-gray-300'}`}
+          >
+            <Repeat size={16} aria-hidden="true" />
+            {isRecurring ? 'Recurring Booking (Weekly)' : 'One-time Booking'}
+        </button>
       </div>
     </div>
   );
@@ -145,7 +184,8 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
             <h4 className="text-xs font-bold text-courtgray uppercase mb-3 flex items-center gap-2">
               {period === 'Morning' ? '🌅' : period === 'Evening' ? '🌇' : '🌙'} {period}
             </h4>
-            <div className="grid grid-cols-3 gap-3" role="listbox" aria-label={`${period} Slots`}>
+            {/* Improved grid layout for better spacing on mobile */}
+            <div className="grid grid-cols-3 md:grid-cols-3 gap-2" role="listbox" aria-label={`${period} Slots`}>
               {groups[period].map((slot: string) => {
                 const isBooked = bookedSlots.includes(slot);
                 const slotPrice = getSlotPrice(slot);
@@ -158,17 +198,17 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
                     aria-selected={selectedSlot === slot}
                     disabled={isBooked}
                     onClick={() => setSelectedSlot(slot)}
-                    className={`py-3 px-1 rounded-xl text-sm font-medium text-center border transition-all relative overflow-hidden flex flex-col items-center justify-center min-h-[60px] outline-none focus-visible:ring-2 focus-visible:ring-electric ${
+                    className={`py-3 px-1 rounded-xl text-sm font-medium text-center border transition-all relative overflow-hidden flex flex-col items-center justify-center min-h-[50px] outline-none focus-visible:ring-2 focus-visible:ring-electric ${
                       selectedSlot === slot
                         ? 'bg-electric text-white border-transparent shadow-lg scale-[1.02]'
                         : isBooked 
-                            ? 'bg-gray-100 dark:bg-gray-800 text-courtgray border-transparent cursor-not-allowed' 
+                            ? 'bg-gray-100 dark:bg-gray-800 text-courtgray border-transparent cursor-not-allowed opacity-50' 
                             : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-blue-300'
                     }`}
                   >
-                    <span>{slot}</span>
+                    <span>{slot.replace(' AM', '').replace(' PM', '')} <span className="text-[10px]">{slot.slice(-2)}</span></span>
                     {isSlotPeak && !isBooked && selectedSlot !== slot && (
-                        <span className="text-[9px] text-orange-500 flex items-center gap-0.5 mt-0.5"><Zap size={8} className="fill-orange-500" aria-hidden="true"/> Peak</span>
+                        <span className="absolute top-0.5 right-0.5 text-[8px] text-orange-500"><Zap size={8} className="fill-orange-500" aria-hidden="true"/></span>
                     )}
                   </button>
                 );
@@ -182,7 +222,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
   };
 
   const renderStep3 = () => (
-    <div className="space-y-6 animate-fade-in-up">
+    <div className="space-y-6 animate-fade-in-up pb-10">
       {/* Add-ons */}
       {(turf.has_coach || turf.has_referee) && (
         <div>
@@ -192,7 +232,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
                   <button 
                        onClick={() => setSelectedAddOns(prev => prev.includes('COACH') ? prev.filter(x => x !== 'COACH') : [...prev, 'COACH'])} 
                        aria-pressed={selectedAddOns.includes('COACH')}
-                       className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all text-left outline-none focus-visible:ring-2 focus-visible:ring-electric ${selectedAddOns.includes('COACH') ? 'bg-electric/10 border-electric' : 'border-gray-100 dark:border-gray-700 hover:bg-offwhite'}`}>
+                       className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all text-left outline-none focus-visible:ring-2 focus-visible:ring-electric ${selectedAddOns.includes('COACH') ? 'bg-electric/10 border-electric' : 'border-gray-100 dark:border-gray-700 hover:bg-offwhite dark:hover:bg-gray-800'}`}>
                      <div className={`p-2 rounded-lg ${selectedAddOns.includes('COACH') ? 'bg-electric text-white' : 'bg-offwhite text-courtgray'}`}><UserCheck size={20} /></div>
                      <div>
                         <p className="text-sm font-bold text-midnight dark:text-white">Coach</p>
@@ -204,7 +244,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
                   <button 
                        onClick={() => setSelectedAddOns(prev => prev.includes('REFEREE') ? prev.filter(x => x !== 'REFEREE') : [...prev, 'REFEREE'])}
                        aria-pressed={selectedAddOns.includes('REFEREE')}
-                       className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all text-left outline-none focus-visible:ring-2 focus-visible:ring-electric ${selectedAddOns.includes('REFEREE') ? 'bg-orange-50 border-orange-500' : 'border-gray-100 dark:border-gray-700 hover:bg-offwhite'}`}>
+                       className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all text-left outline-none focus-visible:ring-2 focus-visible:ring-electric ${selectedAddOns.includes('REFEREE') ? 'bg-orange-50 border-orange-500' : 'border-gray-100 dark:border-gray-700 hover:bg-offwhite dark:hover:bg-gray-800'}`}>
                      <div className={`p-2 rounded-lg ${selectedAddOns.includes('REFEREE') ? 'bg-orange-500 text-white' : 'bg-offwhite text-courtgray'}`}><Flag size={20} /></div>
                      <div>
                         <p className="text-sm font-bold text-midnight dark:text-white">Referee</p>
@@ -267,34 +307,58 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
         </div>
         {isSplit && (
             <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 animate-fade-in-up">
+                
+                {/* Username Search Input */}
                 <div className="flex gap-2 mb-3">
                     <input 
                     type="text" 
-                    placeholder="Enter phone or name"
+                    placeholder="Enter @username or phone"
                     value={newSplitUser}
                     onChange={(e) => setNewSplitUser(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-electric/20 outline-none"
+                    onKeyDown={(e) => e.key === 'Enter' && addSplitUser()}
+                    disabled={isSearchingUser}
+                    className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-electric/20 outline-none disabled:opacity-70"
                     />
                     <button 
                     onClick={addSplitUser}
+                    disabled={isSearchingUser}
                     aria-label="Add user to split"
-                    className="bg-electric text-white p-2 rounded-lg hover:bg-blue-600 shadow-lg shadow-blue-500/30 outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                    className="bg-electric text-white p-2 rounded-lg hover:bg-blue-600 shadow-lg shadow-blue-500/30 outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:opacity-70"
                     >
-                    <Plus size={18} aria-hidden="true" />
+                    {isSearchingUser ? <Loader2 size={18} className="animate-spin"/> : <Plus size={18} aria-hidden="true" />}
                     </button>
                 </div>
+
+                {/* Added Users List */}
                 {splitUsers.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-3">
+                    <div className="flex flex-wrap gap-2 mb-4">
                     {splitUsers.map((user, idx) => (
-                        <div key={idx} className="flex items-center text-xs font-bold bg-white dark:bg-gray-700 px-2 py-1 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm text-midnight dark:text-white">
-                        <span className="mr-2">{user}</span>
-                        <button onClick={() => setSplitUsers(splitUsers.filter((_, i) => i !== idx))} className="text-red-500 hover:text-red-700 outline-none focus-visible:ring-2 focus-visible:ring-red-500 rounded" aria-label={`Remove ${user}`}>
+                        <div key={idx} className="flex items-center text-xs font-bold bg-white dark:bg-gray-700 pr-2 pl-1 py-1 rounded-full border border-gray-200 dark:border-gray-600 shadow-sm text-midnight dark:text-white animate-scale-in">
+                        {user.avatar ? (
+                            <img src={user.avatar} className="w-5 h-5 rounded-full mr-2" alt={user.name} />
+                        ) : (
+                            <div className="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-600 mr-2 flex items-center justify-center text-[8px]">{user.name.charAt(0).toUpperCase()}</div>
+                        )}
+                        <span className="mr-2">{user.name}</span>
+                        <button onClick={() => setSplitUsers(splitUsers.filter((_, i) => i !== idx))} className="text-gray-400 hover:text-red-500 outline-none focus-visible:ring-2 focus-visible:ring-red-500 rounded-full" aria-label={`Remove ${user.name}`}>
                             <X size={12} aria-hidden="true" />
                         </button>
                         </div>
                     ))}
                     </div>
                 )}
+
+                <p className="text-xs text-center text-gray-400 mb-3">- OR -</p>
+
+                <div className="flex gap-2">
+                    <button 
+                      onClick={copySplitLink}
+                      className="flex-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg py-2 px-3 text-sm text-midnight dark:text-white flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                    >
+                      {splitLinkCopied ? <Check size={16} className="text-green-500" /> : <Link size={16} />}
+                      {splitLinkCopied ? 'Link Copied' : 'Copy Split Link'}
+                    </button>
+                </div>
             </div>
         )}
       </div>
@@ -311,8 +375,19 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
              <h1 className="text-5xl font-display font-black text-midnight dark:text-white">₹{totalCost}</h1>
              
              {isSplit && splitUsers.length > 0 && (
-                 <div className="mt-4 inline-flex items-center gap-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full text-xs font-bold">
-                    <Users size={12} aria-hidden="true" /> ₹{perPersonCost} / person
+                 <div className="mt-4 flex flex-col items-center gap-2">
+                     <div className="inline-flex items-center gap-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full text-xs font-bold">
+                        <Users size={12} aria-hidden="true" /> ₹{perPersonCost} / person
+                     </div>
+                     <div className="flex -space-x-2 mt-1">
+                         <div className="w-6 h-6 rounded-full bg-gray-300 border-2 border-white dark:border-gray-800 flex items-center justify-center text-[8px] font-bold">YOU</div>
+                         {splitUsers.slice(0, 4).map((u, i) => (
+                             <img key={i} src={u.avatar || `https://ui-avatars.com/api/?name=${u.name}&background=random`} className="w-6 h-6 rounded-full border-2 border-white dark:border-gray-800" alt={u.name}/>
+                         ))}
+                         {splitUsers.length > 4 && (
+                             <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 border-2 border-white dark:border-gray-800 flex items-center justify-center text-[8px] font-bold">+{splitUsers.length - 4}</div>
+                         )}
+                     </div>
                  </div>
              )}
 
@@ -344,11 +419,12 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
   );
 
   return (
-    <div className="fixed inset-0 bg-midnight/80 z-50 flex items-center justify-center p-4 backdrop-blur-md" role="dialog" aria-modal="true" aria-labelledby="booking-modal-title">
-      <div className="bg-white/95 dark:bg-darkcard/95 backdrop-blur-xl rounded-3xl w-full max-w-md overflow-hidden animate-scale-in max-h-[90vh] flex flex-col shadow-2xl border border-white/20 dark:border-gray-700">
+    // Responsive: Center modal on MD+, Bottom Sheet on SM/Mobile
+    <div className="fixed inset-0 bg-midnight/80 z-[80] flex items-end md:items-center justify-center sm:p-4 backdrop-blur-md" role="dialog" aria-modal="true" aria-labelledby="booking-modal-title">
+      <div className="bg-white/95 dark:bg-darkcard/95 backdrop-blur-xl rounded-t-3xl md:rounded-3xl w-full max-w-md overflow-hidden animate-fade-in-up h-[90vh] md:h-auto md:max-h-[90vh] flex flex-col shadow-2xl border-t md:border border-white/20 dark:border-gray-700">
         
         {/* Header */}
-        <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-offwhite/50 dark:bg-gray-800/50">
+        <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-offwhite/50 dark:bg-gray-800/50 shrink-0">
           <div className="flex items-center gap-3">
              {step > 1 && <button onClick={prevStep} aria-label="Go back" className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors outline-none focus-visible:ring-2 focus-visible:ring-electric"><ArrowLeft size={18} className="text-midnight dark:text-white"/></button>}
              <div>
@@ -362,7 +438,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
         </div>
 
         {/* Progress Bar */}
-        <div className="h-1 w-full bg-gray-100 dark:bg-gray-800">
+        <div className="h-1 w-full bg-gray-100 dark:bg-gray-800 shrink-0">
             <div className="h-full bg-electric transition-all duration-500" style={{ width: `${step * 25}%` }} />
         </div>
         
@@ -375,7 +451,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
         </div>
 
         {/* Footer Actions */}
-        <div className="p-5 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-darkcard">
+        <div className="p-5 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-darkcard shrink-0 pb-safe-bottom">
              {step < 4 ? (
                  <button 
                     onClick={nextStep}

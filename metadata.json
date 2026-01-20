@@ -1,0 +1,7 @@
+{
+  "name": "Turfex",
+  "description": "Real-time social sports booking web app for players and turf owners.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

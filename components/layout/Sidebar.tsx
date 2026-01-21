@@ -63,7 +63,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           <NavItem id="merch" icon={ShoppingBag} label={t('store')} activeTab={activeTab} setActiveTab={setActiveTab} />
           <NavItem id="social" icon={User} label={t('social')} activeTab={activeTab} setActiveTab={setActiveTab} />
           <NavItem id="leaderboard" icon={Trophy} label={t('leaderboard')} activeTab={activeTab} setActiveTab={setActiveTab} />
-          {user?.user_type === UserType.OWNER && (
+          {(user?.user_type === UserType.OWNER || user?.user_type === UserType.MANAGER) && (
               <NavItem id="dashboard" icon={Briefcase} label={t('dashboard')} activeTab={activeTab} setActiveTab={setActiveTab} />
           )}
         </nav>

@@ -70,8 +70,8 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
             <NavItem id="merch" icon={ShoppingBag} label="Store" activeTab={activeTab} setActiveTab={setActiveTab} onClick={toggleMenu} />
             <NavItem id="social" icon={User} label="Profile" activeTab={activeTab} setActiveTab={setActiveTab} onClick={toggleMenu} />
             <NavItem id="leaderboard" icon={Trophy} label="Rankings" activeTab={activeTab} setActiveTab={setActiveTab} onClick={toggleMenu} />
-            {user?.user_type === UserType.OWNER && (
-               <NavItem id="dashboard" icon={Briefcase} label="Owner Dashboard" activeTab={activeTab} setActiveTab={setActiveTab} onClick={toggleMenu} />
+            {(user?.user_type === UserType.OWNER || user?.user_type === UserType.MANAGER) && (
+               <NavItem id="dashboard" icon={Briefcase} label="Dashboard" activeTab={activeTab} setActiveTab={setActiveTab} onClick={toggleMenu} />
             )}
           </nav>
           

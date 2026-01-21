@@ -5,6 +5,7 @@ import Layout from './components/layout/Layout';
 import ChatWindow from './components/ChatWindow';
 import NotificationPanel from './components/feedback/NotificationPanel';
 import ModalManager from './components/ModalManager';
+import DevTools from './components/common/DevTools';
 
 // Feature Screens
 import LoginScreen from './features/auth/LoginScreen';
@@ -60,6 +61,10 @@ const TurfexApp = () => {
     }
   };
 
+  // Adjust floating button position based on active tab
+  const isLeaderboard = activeTab === 'leaderboard';
+  const bottomPosition = isLeaderboard ? 'bottom-32 md:bottom-6' : 'bottom-24 md:bottom-6';
+
   return (
     <Layout 
       user={user} 
@@ -78,7 +83,7 @@ const TurfexApp = () => {
       {user.user_type === UserType.PLAYER && (
           <button 
              onClick={() => setIsChatOpen(!isChatOpen)}
-             className={`fixed bottom-24 md:bottom-6 right-6 p-4 rounded-full shadow-2xl transition-all z-40 active:scale-95 flex items-center justify-center border-2 border-white/10 ${isChatOpen ? 'bg-zinc-800 text-white' : 'bg-black text-volt hover:scale-110'}`}
+             className={`fixed ${bottomPosition} right-6 p-4 rounded-full shadow-2xl transition-all duration-300 z-40 active:scale-95 flex items-center justify-center border-2 border-white/10 ${isChatOpen ? 'bg-zinc-800 text-white' : 'bg-black text-volt hover:scale-110'}`}
              aria-label="Open Virtual Coach"
           >
              {isChatOpen ? <X /> : <Bot size={28} />}
@@ -98,6 +103,7 @@ const TurfexApp = () => {
       )}
 
       <ModalManager />
+      <DevTools />
     </Layout>
   );
 };

@@ -24,8 +24,11 @@ const MapComponent: React.FC<MapComponentProps> = ({ turfs, friends = [], onMark
 
   useEffect(() => {
     if (mapContainer.current && !mapInstance.current) {
-      // Initialize map centered on Mumbai
-      mapInstance.current = L.map(mapContainer.current).setView([19.0760, 72.8777], 11);
+      // Default to Mumbai
+      const initialLat = 19.0760;
+      const initialLng = 72.8777;
+
+      mapInstance.current = L.map(mapContainer.current).setView([initialLat, initialLng], 11);
 
       tileLayerRef.current = L.tileLayer(getTileUrl(), {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
@@ -33,10 +36,9 @@ const MapComponent: React.FC<MapComponentProps> = ({ turfs, friends = [], onMark
         maxZoom: 20
       }).addTo(mapInstance.current);
 
-      // Initialize LayerGroup for efficient marker management
       markersLayer.current = L.layerGroup().addTo(mapInstance.current);
 
-      // Fix Leaflet's default icon path issues in React
+      // Fix Leaflet's default icon path issues
       const DefaultIcon = L.icon({
           iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
           shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
@@ -44,9 +46,31 @@ const MapComponent: React.FC<MapComponentProps> = ({ turfs, friends = [], onMark
           iconAnchor: [12, 41]
       });
       L.Marker.prototype.options.icon = DefaultIcon;
+
+      // Request Geolocation
+      if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+              (position) => {
+                  const { latitude, longitude } = position.coords;
+                  if (mapInstance.current) {
+                      mapInstance.current.setView([latitude, longitude], 12);
+                      L.marker([latitude, longitude], {
+                          icon: L.divIcon({
+                              className: 'user-loc-icon',
+                              html: '<div class="w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-lg animate-pulse"></div>',
+                              iconSize: [16, 16]
+                          })
+                      }).addTo(mapInstance.current).bindPopup("You are here");
+                  }
+              },
+              (error) => {
+                  console.warn("Geolocation denied or error:", error);
+              }
+          );
+      }
     }
 
-    // Observer for Dark Mode changes
+    // Observer for Dark Mode
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.attributeName === 'class') {
@@ -59,7 +83,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ turfs, friends = [], onMark
     
     observer.observe(document.documentElement, { attributes: true });
 
-    // Update markers using LayerGroup
+    // Update markers
     if (markersLayer.current) {
        markersLayer.current.clearLayers();
 
@@ -102,7 +126,6 @@ const MapComponent: React.FC<MapComponentProps> = ({ turfs, friends = [], onMark
                  popupAnchor: [0, -40]
              });
 
-             // Use zIndexOffset to ensure friends are always on top of turfs
              const marker = L.marker([friend.lat, friend.lng], { icon: friendIcon, zIndexOffset: 1000 })
                .bindPopup(`
                  <div class="p-3 text-center min-w-[140px] font-sans">

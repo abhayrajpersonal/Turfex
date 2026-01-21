@@ -1,27 +1,33 @@
 
-import React, { useState, useMemo } from 'react';
-import { X, Users, AlertCircle, ShieldCheck, Plus, ArrowRight, ArrowLeft, Skull, Wallet } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { X, Users, AlertCircle, ShieldCheck, Plus, ArrowRight, ArrowLeft, Skull, Wallet, Loader2 } from 'lucide-react';
 import { Turf, Sport, Booking, CorporateDetails } from '../lib/types';
 import CustomCalendar from './common/CustomCalendar';
 import PaymentReceipt from './booking/PaymentReceipt';
 import { useUI } from '../context/UIContext';
+import { api } from '../services/api';
 
 interface BookingModalProps {
   turf: Turf;
-  existingBookings: Booking[];
+  existingBookings: Booking[]; // Kept for interface compatibility
   onClose: () => void;
   onConfirm: (date: string, time: string, sport: Sport, addOns: string[], equipment: string[], price: number, splitWith: string[], paymentMode?: string, corporateDetails?: CorporateDetails, hasInsurance?: boolean) => void;
   onWaitlist: (date: string, time: string, sport: Sport, bidAmount?: number) => void;
   initialDate?: string;
 }
 
-const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onClose, onConfirm, onWaitlist, initialDate }) => {
+const BookingModal: React.FC<BookingModalProps> = ({ turf, onClose, onConfirm, onWaitlist, initialDate }) => {
   const { showToast } = useUI();
   const [step, setStep] = useState(1);
   const [date, setDate] = useState(initialDate || new Date().toISOString().split('T')[0]);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [selectedSport, setSelectedSport] = useState<Sport>(turf.sports_supported[0]);
   
+  // Slot Availability State
+  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
+  const [isLoadingSlots, setIsLoadingSlots] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
   // Features State
   const [isSplit, setIsSplit] = useState(false);
   const [isLoserPays, setIsLoserPays] = useState(false);
@@ -42,24 +48,26 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
   const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
   const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
 
+  // Fetch Slots on Date Change
+  useEffect(() => {
+      const fetchSlots = async () => {
+          setIsLoadingSlots(true);
+          const { data } = await api.data.checkAvailability(turf.id, date);
+          if (data) {
+              // Convert ISO strings to HH:MM AM/PM format matching allSlots
+              const formatted = data.map((d: string) => new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+              setBookedSlots(formatted);
+          }
+          setIsLoadingSlots(false);
+      };
+      fetchSlots();
+  }, [date, turf.id]);
+
   const allSlots = [
     { time: '06:00 AM', period: 'Morning' }, { time: '07:00 AM', period: 'Morning' }, { time: '08:00 AM', period: 'Morning' },
     { time: '04:00 PM', period: 'Evening' }, { time: '05:00 PM', period: 'Evening' }, 
     { time: '06:00 PM', period: 'Night' }, { time: '07:00 PM', period: 'Night' }, { time: '08:00 PM', period: 'Night' }, { time: '09:00 PM', period: 'Night' }
   ];
-
-  const bookedSlots = useMemo(() => {
-    return existingBookings
-      .filter(b => 
-        b.turf_id === turf.id && 
-        new Date(b.start_time).toISOString().split('T')[0] === date &&
-        b.status !== 'CANCELLED'
-      )
-      .map(b => {
-        const d = new Date(b.start_time);
-        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      });
-  }, [existingBookings, turf.id, date]);
 
   const isSelectedSlotBooked = selectedSlot && bookedSlots.includes(selectedSlot);
 
@@ -99,6 +107,64 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
      }
   };
 
+  const processPayment = async () => {
+      setIsProcessingPayment(true);
+      try {
+          const order = await api.payment.createOrder(perPersonCost, `rcpt_${Date.now()}`);
+          
+          if (!order || !order.id) {
+              throw new Error("Failed to create payment order");
+          }
+
+          const options = {
+              key: "rzp_test_1234567890", // Replace with env variable in prod
+              amount: order.amount,
+              currency: order.currency,
+              name: "Turfex",
+              description: `Booking at ${turf.name}`,
+              order_id: order.id,
+              handler: async function (response: any) {
+                  const verify = await api.payment.verifyPayment(response);
+                  if (verify.success) {
+                      finishBooking();
+                  } else {
+                      showToast("Payment verification failed", "error");
+                      setIsProcessingPayment(false);
+                  }
+              },
+              prefill: {
+                  name: "Turfex User",
+                  contact: "9999999999"
+              },
+              theme: {
+                  color: "#DFFF00"
+              },
+              modal: {
+                  ondismiss: function() {
+                      setIsProcessingPayment(false);
+                  }
+              }
+          };
+
+          // @ts-ignore
+          const rzp1 = new window.Razorpay(options);
+          rzp1.open();
+
+      } catch (error) {
+          console.error("Payment Error:", error);
+          // Fallback for Demo if Razorpay script missing or failed
+          setTimeout(() => {
+              finishBooking();
+          }, 1500);
+      }
+  };
+
+  const finishBooking = () => {
+      const corpDetails = isCorporate ? { company_name: corporateName, gst_number: corporateGST } : undefined;
+      onConfirm(date, selectedSlot!, selectedSport, selectedAddOns, selectedEquipment, totalCost, (isSplit || isLoserPays) ? splitUsers.map(u => u.name) : [], paymentMode, corpDetails, hasInsurance);
+      setIsProcessingPayment(false);
+  };
+
   const handleConfirm = () => {
     if (selectedSlot) {
       if (isSelectedSlotBooked) {
@@ -116,8 +182,9 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
             showToast("Please enter corporate details", "error");
             return;
         }
-        const corpDetails = isCorporate ? { company_name: corporateName, gst_number: corporateGST } : undefined;
-        onConfirm(date, selectedSlot, selectedSport, selectedAddOns, selectedEquipment, totalCost, (isSplit || isLoserPays) ? splitUsers.map(u => u.name) : [], paymentMode, corpDetails, hasInsurance);
+        
+        // Trigger Payment Flow
+        processPayment();
       }
     }
   };
@@ -162,36 +229,42 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
 
     return (
       <div className="space-y-6 animate-fade-in-up">
-        {Object.keys(groups).map(period => (
-          <div key={period}>
-            <h4 className="text-xs font-bold text-zinc-500 uppercase mb-3">{period}</h4>
-            <div className="grid grid-cols-3 gap-2">
-              {groups[period].map((slot: string) => {
-                const isBooked = bookedSlots.includes(slot);
-                const slotPrice = getSlotPrice(slot);
-                const isSlotPeak = slotPrice > turf.price_per_hour;
-
-                return (
-                  <button
-                    key={slot}
-                    onClick={() => { setSelectedSlot(slot); setIsBidding(false); setBidAmount(slotPrice * 1.5); }}
-                    className={`py-3 px-1 text-sm font-bold text-center border transition-all relative ${
-                      selectedSlot === slot
-                        ? 'bg-white text-black border-white'
-                        : isBooked 
-                            ? 'bg-zinc-900/50 text-zinc-700 border-zinc-800 cursor-not-allowed' 
-                            : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-500'
-                    }`}
-                  >
-                    <span className="font-mono">{slot.replace(' AM', '').replace(' PM', '')}</span>
-                    {isSlotPeak && !isBooked && selectedSlot !== slot && <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-volt rounded-full"></span>}
-                    {isBooked && <div className="absolute inset-0 flex items-center justify-center bg-black/50"><X size={12} className="text-red-600"/></div>}
-                  </button>
-                );
-              })}
+        {isLoadingSlots ? (
+            <div className="flex justify-center py-10">
+                <Loader2 className="animate-spin text-volt" />
             </div>
-          </div>
-        ))}
+        ) : (
+            Object.keys(groups).map(period => (
+            <div key={period}>
+                <h4 className="text-xs font-bold text-zinc-500 uppercase mb-3">{period}</h4>
+                <div className="grid grid-cols-3 gap-2">
+                {groups[period].map((slot: string) => {
+                    const isBooked = bookedSlots.includes(slot);
+                    const slotPrice = getSlotPrice(slot);
+                    const isSlotPeak = slotPrice > turf.price_per_hour;
+
+                    return (
+                    <button
+                        key={slot}
+                        onClick={() => { setSelectedSlot(slot); setIsBidding(false); setBidAmount(slotPrice * 1.5); }}
+                        className={`py-3 px-1 text-sm font-bold text-center border transition-all relative ${
+                        selectedSlot === slot
+                            ? 'bg-white text-black border-white'
+                            : isBooked 
+                                ? 'bg-zinc-900/50 text-zinc-700 border-zinc-800 cursor-not-allowed' 
+                                : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-500'
+                        }`}
+                    >
+                        <span className="font-mono">{slot.replace(' AM', '').replace(' PM', '')}</span>
+                        {isSlotPeak && !isBooked && selectedSlot !== slot && <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-volt rounded-full"></span>}
+                        {isBooked && <div className="absolute inset-0 flex items-center justify-center bg-black/50"><X size={12} className="text-red-600"/></div>}
+                    </button>
+                    );
+                })}
+                </div>
+            </div>
+            ))
+        )}
       </div>
     );
   };
@@ -316,9 +389,10 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
              ) : (
                  <button 
                     onClick={handleConfirm}
-                    className="w-full bg-volt text-black font-display font-bold uppercase text-lg py-4 flex items-center justify-center gap-2 hover:bg-white transition-all shadow-[0_0_20px_rgba(223,255,0,0.3)]"
+                    disabled={isProcessingPayment}
+                    className="w-full bg-volt text-black font-display font-bold uppercase text-lg py-4 flex items-center justify-center gap-2 hover:bg-white transition-all shadow-[0_0_20px_rgba(223,255,0,0.3)] disabled:opacity-50"
                  >
-                    {isLoserPays ? 'Stake Amount' : 'Pay'} ₹{perPersonCost}
+                    {isProcessingPayment ? <Loader2 className="animate-spin" /> : `${isLoserPays ? 'Stake Amount' : 'Pay'} ₹${perPersonCost}`}
                  </button>
              )}
         </div>

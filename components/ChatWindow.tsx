@@ -1,8 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, Bot, Sparkles, Zap } from 'lucide-react';
+import { X, Send, Bot } from 'lucide-react';
 import { UserProfile } from '../lib/types';
-import { GoogleGenAI } from "@google/genai";
 
 interface ChatWindowProps {
   isOpen: boolean;
@@ -38,8 +37,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ isOpen, onClose, user }) => {
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -62,23 +59,21 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ isOpen, onClose, user }) => {
     setIsTyping(true);
 
     try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash-lite-preview-02-05',
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { text: `Context: The user is asking a question about sports rules or needs a dispute resolved. Sport might be Football, Cricket, Badminton, Pickleball, or Tennis.\n\nUser Question: ${text}` }
-            ]
-          }
-        ],
-        config: {
-          systemInstruction: "You are the Turfex Virtual Coach. Your role is to assist amateur sports players on the field. \n1. Provide clear, extremely concise explanations of rules (under 3 sentences if possible).\n2. Act as a neutral arbitrator for disputes.\n3. Be encouraging.\n4. Do not provide medical advice.\n5. Keep formatting simple for mobile reading.",
-          temperature: 0.3,
-        }
+      // Use the internal API route to protect the key
+      const res = await fetch('/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: `User Question: ${text}`,
+          context: "The user is asking a question about sports rules or needs a dispute resolved. Sport might be Football, Cricket, Badminton, Pickleball, or Tennis.",
+          systemInstruction: "You are the Turfex Virtual Coach. Your role is to assist amateur sports players on the field. \n1. Provide clear, extremely concise explanations of rules (under 3 sentences if possible).\n2. Act as a neutral arbitrator for disputes.\n3. Be encouraging.\n4. Do not provide medical advice.\n5. Keep formatting simple for mobile reading."
+        })
       });
 
-      const aiText = response.text || "I'm having trouble checking the rulebook right now. Please try again.";
+      if (!res.ok) throw new Error('API request failed');
+      
+      const data = await res.json();
+      const aiText = data.text || "I'm having trouble checking the rulebook right now.";
 
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
@@ -89,7 +84,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ isOpen, onClose, user }) => {
 
     } catch (error) {
       console.error("AI Error:", error);
-      let errorMessage = "⚠️ Connection interference. I couldn't reach the server. Please try again.";
+      // Fallback for when API route is not available (Client-side only mode)
+      const errorMessage = "I couldn't reach the server. (If you are running locally without the backend, AI features may be limited).";
+      
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         sender: 'coach',

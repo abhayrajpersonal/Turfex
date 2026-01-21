@@ -5,8 +5,9 @@ import { useData } from '../../context/DataContext';
 import { useUI } from '../../context/UIContext';
 import { useAuth } from '../../context/AuthContext';
 import { Sport, FriendActivity, OpenMatch } from '../../lib/types';
-import { MOCK_TURFS, MOCK_FRIENDS_ACTIVITY, MOCK_COACHES } from '../../lib/mockData';
+import { MOCK_FRIENDS_ACTIVITY, MOCK_COACHES } from '../../lib/mockData';
 import MapComponent from '../../components/common/MapComponent';
+import AIRecommendationBanner from '../../components/AIRecommendationBanner';
 import { debounce } from '../../lib/utils';
 
 // Refactored Components
@@ -19,7 +20,7 @@ import TournamentList from './components/TournamentList';
 import CoachList from './components/CoachList';
 
 const DiscoverScreen: React.FC = () => {
-  const { openMatches, joinMatch, tournaments } = useData();
+  const { openMatches, joinMatch, tournaments, turfs } = useData();
   const { setActiveModal, showToast, setActiveTab } = useUI();
   const { user } = useAuth();
   
@@ -55,13 +56,14 @@ const DiscoverScreen: React.FC = () => {
   };
 
   const filteredTurfs = useMemo(() => {
-      return MOCK_TURFS
+      // Use real turfs from context
+      return turfs
         .filter(t => selectedSport === 'All' || t.sports_supported.includes(selectedSport))
         .filter(t => t.name.toLowerCase().includes(debouncedSearch.toLowerCase()) || t.location.toLowerCase().includes(debouncedSearch.toLowerCase()))
         .filter(t => selectedAmenities.length === 0 || selectedAmenities.every(a => t.facilities.includes(a)))
         .filter(t => t.price_per_hour <= priceRange)
         ;
-  }, [selectedSport, debouncedSearch, selectedAmenities, priceRange]);
+  }, [turfs, selectedSport, debouncedSearch, selectedAmenities, priceRange]);
 
   const handleJoinMatch = (matchId: string) => {
     if (user?.kyc_status !== 'VERIFIED') {
@@ -89,7 +91,7 @@ const DiscoverScreen: React.FC = () => {
   };
 
   const handleFriendClick = (friend: FriendActivity) => {
-      const turf = MOCK_TURFS.find(t => t.id === friend.turf_id);
+      const turf = turfs.find(t => t.id === friend.turf_id);
       if (turf) {
           showToast(`Joining ${friend.username} at ${turf.name}`);
           setActiveModal('booking', { 
@@ -132,6 +134,9 @@ const DiscoverScreen: React.FC = () => {
                   <button onClick={() => setViewMode('map')} className={`p-2 ${viewMode === 'map' ? 'bg-white text-black' : 'text-zinc-500 hover:text-white'}`}><Map size={20}/></button>
               </div>
           </div>
+
+          {/* AI Banner - New Addition */}
+          <AIRecommendationBanner user={user} />
 
           <div className="flex flex-col md:flex-row gap-4">
               <div className="relative flex-1">

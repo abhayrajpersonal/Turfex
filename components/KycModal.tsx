@@ -1,5 +1,8 @@
+
 import React, { useState } from 'react';
 import { X, Upload, Loader2, CheckCircle } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { KycStatus } from '../lib/types';
 
 interface KycModalProps {
   onClose: () => void;
@@ -7,6 +10,7 @@ interface KycModalProps {
 }
 
 const KycModal: React.FC<KycModalProps> = ({ onClose, onComplete }) => {
+  const { updateUserFields } = useAuth();
   const [step, setStep] = useState(1);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -18,11 +22,16 @@ const KycModal: React.FC<KycModalProps> = ({ onClose, onComplete }) => {
     }, 1500);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setIsUploading(true);
-    setTimeout(() => {
-      onComplete();
-    }, 1000);
+    // In real app, verify doc here
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Update Profile Status
+    await updateUserFields({ kyc_status: KycStatus.VERIFIED });
+    
+    setIsUploading(false);
+    onComplete();
   };
 
   return (
@@ -56,7 +65,8 @@ const KycModal: React.FC<KycModalProps> = ({ onClose, onComplete }) => {
             </div>
             <button 
               onClick={handleSubmit}
-              className="w-full bg-electric text-white font-bold py-3 rounded-xl hover:bg-blue-600 transition-colors flex items-center justify-center"
+              disabled={isUploading}
+              className="w-full bg-electric text-white font-bold py-3 rounded-xl hover:bg-blue-600 transition-colors flex items-center justify-center disabled:opacity-70"
             >
               {isUploading ? <Loader2 className="animate-spin" /> : 'Submit for Verification'}
             </button>

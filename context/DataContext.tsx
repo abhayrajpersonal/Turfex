@@ -1,12 +1,14 @@
 
 import React, { createContext, useContext, ReactNode, useState, useEffect, useRef } from 'react';
-import { Booking, OpenMatch, Notification, ActivityLog, Turf, Sport, Team, CartItem, Tournament, InventoryItem, Bid } from '../lib/types';
-import { MOCK_OPEN_MATCHES, MOCK_NOTIFICATIONS, MOCK_ACTIVITIES, MOCK_TEAMS, MOCK_TOURNAMENTS } from '../lib/mockData';
-import { useLocalStorage } from '../hooks/useLocalStorage';
+import { Booking, OpenMatch, Notification, ActivityLog, Team, CartItem, Tournament, InventoryItem, Bid, Turf } from '../lib/types';
+import { MOCK_OPEN_MATCHES, MOCK_NOTIFICATIONS, MOCK_ACTIVITIES, MOCK_TEAMS, MOCK_TOURNAMENTS, MOCK_TURFS, MOCK_BOOKINGS } from '../lib/mockData';
 import { useAuth } from './AuthContext';
+import { api } from '../services/api';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { sendBrowserNotification } from '../lib/utils';
 
 interface DataContextType {
+  turfs: Turf[];
   bookings: Booking[];
   openMatches: OpenMatch[];
   notifications: Notification[];
@@ -19,7 +21,7 @@ interface DataContextType {
   addBooking: (booking: Booking) => void;
   cancelBooking: (bookingId: string) => void;
   joinMatch: (matchId: string) => void;
-  addMatch: (match: OpenMatch) => void; // Added for Scoreboard
+  addMatch: (match: OpenMatch) => void;
   updateMatch: (matchId: string, updates: Partial<OpenMatch>) => void;
   addNotification: (notification: Notification) => void;
   clearNotifications: () => void;
@@ -31,100 +33,120 @@ interface DataContextType {
   updateTournament: (id: string, updates: Partial<Tournament>) => void;
   updateInventory: (items: InventoryItem[]) => void;
   placeBid: (bid: Bid) => void;
+  refreshData: () => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
-  const [bookings, setBookings] = useLocalStorage<Booking[]>('turfex_bookings', []);
-  const [openMatches, setOpenMatches] = useLocalStorage<OpenMatch[]>('turfex_matches', MOCK_OPEN_MATCHES);
-  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
-  const [activities, setActivities] = useState<ActivityLog[]>(MOCK_ACTIVITIES);
-  const [teams, setTeams] = useLocalStorage<Team[]>('turfex_teams', MOCK_TEAMS);
-  const [cart, setCart] = useLocalStorage<CartItem[]>('turfex_cart', []);
-  const [tournaments, setTournaments] = useLocalStorage<Tournament[]>('turfex_tournaments', MOCK_TOURNAMENTS);
-  const [inventory, setInventory] = useLocalStorage<InventoryItem[]>('turfex_inventory', []);
-  const [bids, setBids] = useLocalStorage<Bid[]>('turfex_bids', []);
+  
+  // State
+  const [turfs, setTurfs] = useState<Turf[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [openMatches, setOpenMatches] = useState<OpenMatch[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [activities, setActivities] = useState<ActivityLog[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [bids, setBids] = useState<Bid[]>([]);
 
-  // Refs for polling interval to access latest state
-  const bookingsRef = useRef(bookings);
-  const matchesRef = useRef(openMatches);
-  const userRef = useRef(user);
-  const notifiedEventsRef = useRef<Set<string>>(new Set());
-
-  useEffect(() => { bookingsRef.current = bookings; }, [bookings]);
-  useEffect(() => { matchesRef.current = openMatches; }, [openMatches]);
-  useEffect(() => { userRef.current = user; }, [user]);
-
-  // Reminder Polling Logic
+  // Initial Load & Realtime Setup
   useEffect(() => {
-    const checkUpcomingEvents = () => {
-        const currentUser = userRef.current;
-        if (!currentUser) return;
-
-        const now = new Date();
-        const upcomingThreshold = 60 * 60 * 1000; // 1 hour
-        
-        const notify = (id: string, startStr: string, title: string, body: string) => {
-            if (notifiedEventsRef.current.has(id)) return;
-
-            const startTime = new Date(startStr);
-            const timeDiff = startTime.getTime() - now.getTime();
-
-            // Notify if between 0 and 60 minutes
-            if (timeDiff > 0 && timeDiff <= upcomingThreshold) {
-                const mins = Math.ceil(timeDiff / 60000);
-                const notificationTitle = `Upcoming: ${title}`;
-                const notificationBody = `${body} starts in ${mins} mins!`;
-
-                // Add to In-App
-                const newNotif: Notification = {
-                    id: `rem-${Date.now()}-${id}`,
-                    user_id: currentUser.id,
-                    type: 'SYSTEM',
-                    message: notificationBody,
-                    is_read: false,
-                    created_at: new Date().toISOString()
-                };
-                setNotifications(prev => [newNotif, ...prev]);
-
-                // Send Browser Push
-                sendBrowserNotification(notificationTitle, notificationBody);
-
-                // Mark as notified
-                notifiedEventsRef.current.add(id);
-            }
-        };
-
-        bookingsRef.current.forEach(b => {
-            if (b.user_id === currentUser.id && b.status === 'CONFIRMED') {
-                notify(b.id, b.start_time, 'Booking Reminder', `${b.sport} at ${b.turf?.name || 'Venue'}`);
-            }
-        });
-
-        matchesRef.current.forEach(m => {
-            if (m.joined_players.includes(currentUser.id) && m.status !== 'COMPLETED') {
-                notify(m.id, m.start_time, 'Match Reminder', `${m.sport} Match`);
-            }
-        });
+    const fetchData = async () => {
+        if (isSupabaseConfigured()) {
+            const [turfRes, bRes, mRes, tRes] = await Promise.all([
+                api.data.getTurfs(),
+                api.data.getBookings(user?.id),
+                api.data.getOpenMatches(),
+                api.data.getTeams()
+            ]);
+            
+            if (turfRes.data) setTurfs(turfRes.data as any);
+            if (bRes.data) setBookings(bRes.data as any);
+            if (mRes.data) setOpenMatches(mRes.data as any);
+            if (tRes.data) setTeams(tRes.data as any);
+            
+            // Mock data for things not yet in DB
+            setTournaments(MOCK_TOURNAMENTS);
+            setActivities(MOCK_ACTIVITIES);
+            
+            // Fetch real notifications if table existed, otherwise mock
+            setNotifications(MOCK_NOTIFICATIONS);
+        } else {
+            // Fallback to Mock / LocalStorage
+            const storedBookings = window.localStorage.getItem('turfex_bookings');
+            setBookings(storedBookings ? JSON.parse(storedBookings) : []);
+            setTurfs(MOCK_TURFS);
+            setOpenMatches(MOCK_OPEN_MATCHES);
+            setTeams(MOCK_TEAMS);
+            setTournaments(MOCK_TOURNAMENTS);
+            setNotifications(MOCK_NOTIFICATIONS);
+            setActivities(MOCK_ACTIVITIES);
+        }
     };
 
-    const intervalId = setInterval(checkUpcomingEvents, 60000); 
-    checkUpcomingEvents(); 
+    fetchData();
 
-    return () => clearInterval(intervalId);
-  }, []); 
+    // Realtime Subscriptions
+    if (isSupabaseConfigured()) {
+        const bookingsChannel = supabase!.channel('public:bookings')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, (payload) => {
+                if (payload.eventType === 'INSERT') setBookings(prev => [payload.new as any, ...prev]);
+                if (payload.eventType === 'UPDATE') setBookings(prev => prev.map(b => b.id === payload.new.id ? payload.new as any : b));
+            })
+            .subscribe();
 
-  const addBooking = (booking: Booking) => {
+        const matchesChannel = supabase!.channel('public:open_matches')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'open_matches' }, (payload) => {
+                if (payload.eventType === 'INSERT') setOpenMatches(prev => [payload.new as any, ...prev]);
+                if (payload.eventType === 'UPDATE') setOpenMatches(prev => prev.map(m => m.id === payload.new.id ? payload.new as any : m));
+            })
+            .subscribe();
+
+        const notificationsChannel = supabase!.channel('public:notifications')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user?.id}` }, (payload) => {
+                const newNotif = payload.new as Notification;
+                setNotifications(prev => [newNotif, ...prev]);
+                sendBrowserNotification('Turfex Alert', newNotif.message);
+            })
+            .subscribe();
+
+        return () => {
+            supabase!.removeChannel(bookingsChannel);
+            supabase!.removeChannel(matchesChannel);
+            supabase!.removeChannel(notificationsChannel);
+        };
+    }
+  }, [user]);
+
+  const refreshData = async () => {
+      // Manual refresh logic if needed
+  };
+
+  // Actions
+  const addBooking = async (booking: Booking) => {
+    // Optimistic Update
     setBookings(prev => [booking, ...prev]);
+    // API Call
+    const { error } = await api.data.createBooking(booking);
+    if (error) {
+        console.error('Booking failed', error);
+    } else if (!isSupabaseConfigured()) {
+        // Persist to local storage if demo
+        const current = JSON.parse(window.localStorage.getItem('turfex_bookings') || '[]');
+        window.localStorage.setItem('turfex_bookings', JSON.stringify([booking, ...current]));
+    }
   };
 
-  const cancelBooking = (bookingId: string) => {
+  const cancelBooking = async (bookingId: string) => {
     setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'CANCELLED' } : b));
+    await api.data.cancelBooking(bookingId);
   };
 
-  const joinMatch = (matchId: string) => {
+  const joinMatch = async (matchId: string) => {
     if (!user) return;
     setOpenMatches(prev => prev.map(m => {
       if (m.id === matchId) {
@@ -132,14 +154,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       return m;
     }));
+    await api.data.joinMatch(matchId, user.id);
   };
 
-  const addMatch = (match: OpenMatch) => {
+  const addMatch = async (match: OpenMatch) => {
       setOpenMatches(prev => [match, ...prev]);
+      await api.data.createMatch(match);
   };
 
-  const updateMatch = (matchId: string, updates: Partial<OpenMatch>) => {
+  const updateMatch = async (matchId: string, updates: Partial<OpenMatch>) => {
     setOpenMatches(prev => prev.map(m => m.id === matchId ? { ...m, ...updates } : m));
+    await api.data.updateMatch(matchId, updates);
   };
 
   const addNotification = (notification: Notification) => {
@@ -166,7 +191,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setBids(prev => [...prev, bid]);
   };
 
-  // Cart Functions
+  // Cart Functions (Client Side Only)
   const addToCart = (item: CartItem) => {
     setCart(prev => {
       const existing = prev.find(i => i.id === item.id && i.selectedColor === item.selectedColor && i.selectedSize === item.selectedSize);
@@ -197,30 +222,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   return (
     <DataContext.Provider value={{ 
-      bookings, 
-      openMatches, 
-      notifications, 
-      activities, 
-      teams,
-      cart,
-      tournaments,
-      inventory,
-      bids,
-      addBooking, 
-      cancelBooking, 
-      joinMatch,
-      addMatch,
-      updateMatch,
-      addNotification,
-      clearNotifications,
-      createTeam,
-      addToCart,
-      removeFromCart,
-      updateCartQuantity,
-      clearCart,
-      updateTournament,
-      updateInventory,
-      placeBid
+      turfs, bookings, openMatches, notifications, activities, teams, cart, tournaments, inventory, bids,
+      addBooking, cancelBooking, joinMatch, addMatch, updateMatch, addNotification, clearNotifications,
+      createTeam, addToCart, removeFromCart, updateCartQuantity, clearCart, updateTournament, updateInventory, placeBid, refreshData
     }}>
       {children}
     </DataContext.Provider>

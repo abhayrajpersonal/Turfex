@@ -7,7 +7,7 @@ import { UserType } from '../../lib/types';
 import Logo from '../../components/common/Logo';
 
 const LoginScreen: React.FC = () => {
-  const { login, isLoading, user } = useAuth();
+  const { login, verifyOtp, isLoading, user } = useAuth();
   const { showToast, setActiveTab } = useUI();
   
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -21,25 +21,33 @@ const LoginScreen: React.FC = () => {
     return regex.test(phone);
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-
-    if (!showOtpInput) {
-      if (!validatePhone(phoneNumber)) {
+    if (!validatePhone(phoneNumber)) {
         setError("Enter valid 10-digit mobile number.");
         return;
-      }
-      setShowOtpInput(true);
-    } else {
-      if (otp.length !== 4) {
-        setError("Enter 4-digit code.");
-        return;
+    }
+    setIsSubmitting(true);
+    await login(phoneNumber);
+    setIsSubmitting(false);
+    setShowOtpInput(true);
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setError(null);
+      if (otp.length !== 4 && otp.length !== 6) {
+          setError("Invalid OTP length.");
+          return;
       }
       setIsSubmitting(true);
-      await login(phoneNumber);
+      const success = await verifyOtp(phoneNumber, otp);
       setIsSubmitting(false);
-    }
+      
+      if (!success) {
+          setError("Invalid OTP. Try again.");
+      }
   };
 
   React.useEffect(() => {
@@ -78,8 +86,8 @@ const LoginScreen: React.FC = () => {
             </h2>
           </div>
           
-          <form onSubmit={handleLogin} className="space-y-6">
-            {!showOtpInput ? (
+          {!showOtpInput ? (
+            <form onSubmit={handleSendOtp} className="space-y-6">
               <div className="relative">
                 <label className="block text-[10px] font-bold text-volt uppercase tracking-wider mb-2">Mobile Number</label>
                 <div className="flex group focus-within:border-volt border border-zinc-700 bg-black transition-colors h-14 items-center">
@@ -102,46 +110,46 @@ const LoginScreen: React.FC = () => {
                 </div>
                 <p className="text-[10px] text-zinc-600 mt-2 font-mono">Demo: End with '9' for Owner.</p>
               </div>
-            ) : (
+              
+              {error && <div className="flex items-center gap-2 text-red-500 text-xs font-bold bg-red-900/10 p-3 border border-red-900/30"><AlertCircle size={14} />{error}</div>}
+
+              <button
+                type="submit"
+                className="w-full bg-volt text-black font-display font-bold uppercase text-lg py-4 hover:bg-white transition-colors flex justify-center items-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(223,255,0,0.15)]"
+                disabled={isLoading || isSubmitting}
+              >
+                {(isLoading || isSubmitting) ? <Loader2 className="animate-spin text-black" /> : <>Get Code <ArrowRight size={20} /></>}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleVerifyOtp} className="space-y-6">
               <div>
                 <label className="block text-[10px] font-bold text-volt uppercase tracking-wider mb-2">One-Time Password</label>
                 <input
                   type="text"
                   className="block w-full border border-zinc-700 bg-black text-volt p-4 text-center text-3xl tracking-[0.5em] font-mono focus:border-volt outline-none h-16"
                   placeholder="••••"
-                  maxLength={4}
+                  maxLength={6}
                   value={otp}
                   onChange={(e) => {
                     const val = e.target.value.replace(/\D/g, '');
-                    if (val.length <= 4) setOtp(val);
+                    if (val.length <= 6) setOtp(val);
                   }}
                   required
                   autoFocus
                 />
               </div>
-            )}
-            
-            {error && (
-              <div className="flex items-center gap-2 text-red-500 text-xs font-bold bg-red-900/10 p-3 border border-red-900/30">
-                <AlertCircle size={14} />
-                {error}
-              </div>
-            )}
 
-            <button
-              type="submit"
-              className="w-full bg-volt text-black font-display font-bold uppercase text-lg py-4 hover:bg-white transition-colors flex justify-center items-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(223,255,0,0.15)] hover:shadow-[0_0_30px_rgba(223,255,0,0.4)]"
-              disabled={isLoading || isSubmitting}
-            >
-              {(isLoading || isSubmitting) ? <Loader2 className="animate-spin text-black" /> : (
-                  <>
-                    {showOtpInput ? 'Verify' : 'Get Code'} 
-                    <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform text-black" />
-                  </>
-              )}
-            </button>
-            
-            {showOtpInput && (
+              {error && <div className="flex items-center gap-2 text-red-500 text-xs font-bold bg-red-900/10 p-3 border border-red-900/30"><AlertCircle size={14} />{error}</div>}
+
+              <button
+                type="submit"
+                className="w-full bg-volt text-black font-display font-bold uppercase text-lg py-4 hover:bg-white transition-colors flex justify-center items-center gap-2 disabled:opacity-50"
+                disabled={isLoading || isSubmitting}
+              >
+                {(isLoading || isSubmitting) ? <Loader2 className="animate-spin text-black" /> : 'Verify & Enter'}
+              </button>
+              
               <button 
                 type="button" 
                 onClick={() => { setShowOtpInput(false); setOtp(''); setError(null); }}
@@ -149,8 +157,8 @@ const LoginScreen: React.FC = () => {
               >
                 Change Number
               </button>
-            )}
-          </form>
+            </form>
+          )}
         </div>
       </div>
     </div>

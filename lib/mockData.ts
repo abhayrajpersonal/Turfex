@@ -1,5 +1,5 @@
 
-import { UserProfile, UserType, KycStatus, Sport, OpenMatch, LeaderboardEntry, UserTier, Team, ChatRoom, WalletTransaction, Notification, ActivityLog, Tournament, Turf, TournamentBracketData, FriendActivity, MerchItem, Coach, RentalItem } from './types';
+import { UserProfile, UserType, KycStatus, Sport, OpenMatch, LeaderboardEntry, UserTier, Team, ChatRoom, WalletTransaction, Notification, ActivityLog, Tournament, Turf, TournamentBracketData, FriendActivity, MerchItem, Coach, RentalItem, Booking } from './types';
 
 export const MOCK_USER: UserProfile = {
   id: 'u1',
@@ -134,6 +134,36 @@ export const MOCK_TURFS: Turf[] = [
     has_coach: false,
     has_referee: true,
     rental_equipment: []
+  }
+];
+
+export const MOCK_BOOKINGS: Booking[] = [
+  {
+    id: 'b_upcoming_1',
+    turf_id: 't1',
+    user_id: 'u1',
+    sport: Sport.FOOTBALL,
+    start_time: new Date(Date.now() + 172800000).toISOString(), // 2 days from now
+    end_time: new Date(Date.now() + 172800000 + 3600000).toISOString(),
+    price: 1200,
+    status: 'CONFIRMED',
+    turf: MOCK_TURFS[0],
+    payment_mode: 'FULL',
+    is_recurring: false
+  },
+  {
+    id: 'b_past_1',
+    turf_id: 't2',
+    user_id: 'u1',
+    sport: Sport.BADMINTON,
+    start_time: new Date(Date.now() - 86400000).toISOString(), // Yesterday
+    end_time: new Date(Date.now() - 86400000 + 3600000).toISOString(),
+    price: 800,
+    status: 'COMPLETED',
+    turf: MOCK_TURFS[1],
+    payment_mode: 'SPLIT',
+    split_with: ['Rohan'],
+    is_recurring: false
   }
 ];
 

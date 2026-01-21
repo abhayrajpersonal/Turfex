@@ -65,15 +65,6 @@ export const Logo: React.FC<LogoProps> = ({ className = "", showWordmark = true,
           >
             TURFEX
           </span>
-          <span 
-            className="font-sans font-bold uppercase text-volt tracking-[0.4em]" 
-            style={{ 
-              fontSize: size * 0.22,
-              marginLeft: '2px'
-            }}
-          >
-            SPORTS
-          </span>
         </div>
       )}
     </div>

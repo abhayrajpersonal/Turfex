@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, Bot, Sparkles, User } from 'lucide-react';
+import { X, Send, Bot, Sparkles, Zap } from 'lucide-react';
 import { UserProfile } from '../lib/types';
 import { GoogleGenAI } from "@google/genai";
 
@@ -38,8 +38,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ isOpen, onClose, user }) => {
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Initialize Gemini Client
-  // NOTE: In a real production app, API calls should go through a backend proxy to secure the key.
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const scrollToBottom = () => {
@@ -53,7 +51,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ isOpen, onClose, user }) => {
   const handleSend = async (text: string = inputText) => {
     if (!text.trim()) return;
 
-    // 1. Add User Message
     const userMsg: Message = {
       id: Date.now().toString(),
       sender: 'user',
@@ -65,8 +62,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ isOpen, onClose, user }) => {
     setIsTyping(true);
 
     try {
-      // 2. Call Gemini API
-      // Using 'gemini-2.0-flash-lite-preview-02-05' for low latency response
       const response = await ai.models.generateContent({
         model: 'gemini-2.0-flash-lite-preview-02-05',
         contents: [
@@ -85,7 +80,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ isOpen, onClose, user }) => {
 
       const aiText = response.text || "I'm having trouble checking the rulebook right now. Please try again.";
 
-      // 3. Add AI Response
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         sender: 'coach',
@@ -96,7 +90,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ isOpen, onClose, user }) => {
     } catch (error) {
       console.error("AI Error:", error);
       let errorMessage = "⚠️ Connection interference. I couldn't reach the server. Please try again.";
-      
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         sender: 'coach',
@@ -111,35 +104,38 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ isOpen, onClose, user }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed bottom-24 md:bottom-20 right-4 w-[90vw] md:w-96 bg-white/95 dark:bg-darkcard/95 backdrop-blur-xl border border-white/20 dark:border-gray-700 shadow-2xl rounded-3xl z-[60] flex flex-col overflow-hidden animate-scale-in h-[600px] max-h-[75vh]">
+    <div className="fixed bottom-24 md:bottom-20 right-4 w-[90vw] md:w-96 bg-black border border-zinc-800 shadow-2xl rounded-3xl z-[60] flex flex-col overflow-hidden animate-scale-in h-[600px] max-h-[75vh]">
       
-      {/* Header */}
-      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-4 text-white flex justify-between items-center shadow-md z-10">
+      {/* Header - Strictly Black with Volt Accent */}
+      <div className="bg-black p-4 text-white flex justify-between items-center shadow-md z-10 border-b border-volt/30">
         <div className="flex items-center gap-3">
-          <div className="bg-white/20 p-2 rounded-full">
+          <div className="bg-volt text-black p-2 rounded-xl shadow-[0_0_15px_rgba(223,255,0,0.3)]">
             <Bot size={24} />
           </div>
           <div>
-            <h3 className="font-bold text-lg leading-none">Virtual Coach</h3>
-            <p className="text-[10px] text-white/80 flex items-center gap-1 mt-1">
-              <Sparkles size={10} /> AI-Powered • Always Online
+            <h3 className="font-display font-bold text-lg leading-none italic uppercase tracking-wider">Virtual Coach</h3>
+            <p className="text-[10px] text-zinc-400 flex items-center gap-1 mt-1 font-mono">
+              <span className="w-1.5 h-1.5 bg-volt rounded-full animate-pulse"></span> ONLINE
             </p>
           </div>
         </div>
-        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-full transition-colors"><X size={20} /></button>
+        <button onClick={onClose} className="p-2 hover:bg-zinc-900 rounded-full transition-colors text-zinc-400 hover:text-white"><X size={20} /></button>
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50 dark:bg-darkbg/50">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-zinc-950/50 relative">
+        {/* Subtle grid background */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none"></div>
+        
         {messages.map((msg) => (
-          <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[85%] p-3.5 rounded-2xl text-sm shadow-sm leading-relaxed ${
+          <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'} relative z-10`}>
+            <div className={`max-w-[85%] p-3.5 rounded-2xl text-sm shadow-md leading-relaxed ${
               msg.sender === 'user' 
-                ? 'bg-electric text-white rounded-br-none' 
-                : 'bg-white dark:bg-gray-700 text-midnight dark:text-white rounded-bl-none border border-gray-100 dark:border-gray-600'
+                ? 'bg-volt text-black font-bold rounded-br-none' 
+                : 'bg-zinc-800 text-white rounded-bl-none border border-zinc-700'
             }`}>
               {msg.text}
-              <p className={`text-[9px] mt-1.5 text-right opacity-60 ${msg.sender === 'user' ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+              <p className={`text-[9px] mt-1.5 text-right font-mono ${msg.sender === 'user' ? 'text-black/60' : 'text-zinc-500'}`}>
                 {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </p>
             </div>
@@ -147,25 +143,25 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ isOpen, onClose, user }) => {
         ))}
         
         {isTyping && (
-          <div className="flex justify-start">
-            <div className="bg-white dark:bg-gray-700 p-4 rounded-2xl rounded-bl-none shadow-sm border border-gray-100 dark:border-gray-600 flex gap-1">
-              <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
-              <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></span>
-              <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></span>
+          <div className="flex justify-start relative z-10">
+            <div className="bg-zinc-800 p-4 rounded-2xl rounded-bl-none shadow-sm border border-zinc-700 flex gap-1">
+              <span className="w-2 h-2 bg-volt rounded-full animate-bounce"></span>
+              <span className="w-2 h-2 bg-volt rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></span>
+              <span className="w-2 h-2 bg-volt rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></span>
             </div>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Quick Suggestions (Only if chat is short) */}
+      {/* Quick Suggestions */}
       {messages.length < 4 && (
-        <div className="px-4 pb-2 flex gap-2 overflow-x-auto scrollbar-hide">
+        <div className="px-4 pb-3 flex gap-2 overflow-x-auto scrollbar-hide bg-black/50 backdrop-blur-sm pt-2">
           {SUGGESTIONS.map((s, i) => (
             <button 
               key={i}
               onClick={() => handleSend(s)}
-              className="whitespace-nowrap bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-800 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
+              className="whitespace-nowrap bg-zinc-900 text-zinc-300 border border-zinc-800 px-3 py-2 rounded-lg text-[10px] font-bold hover:border-volt hover:text-volt transition-colors uppercase tracking-wide"
             >
               {s}
             </button>
@@ -174,10 +170,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ isOpen, onClose, user }) => {
       )}
 
       {/* Input Area */}
-      <div className="p-3 border-t border-gray-100 dark:border-gray-700 bg-white/90 dark:bg-darkcard/90 backdrop-blur-md flex gap-2">
+      <div className="p-3 border-t border-zinc-800 bg-black flex gap-2">
         <input 
-          className="flex-1 bg-gray-100 dark:bg-gray-800 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none dark:text-white transition-all placeholder-gray-400 font-medium"
-          placeholder="Ask about rules, fouls, scoring..."
+          className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm focus:ring-1 focus:ring-volt outline-none text-white transition-all placeholder-zinc-600 font-medium"
+          placeholder="Ask about rules..."
           value={inputText}
           onChange={e => setInputText(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleSend()}
@@ -185,7 +181,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ isOpen, onClose, user }) => {
         <button 
           onClick={() => handleSend()} 
           disabled={!inputText.trim() || isTyping}
-          className="p-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-emerald-600/20 active:scale-95"
+          className="p-3 bg-volt text-black rounded-xl hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg active:scale-95"
         >
           <Send size={20} />
         </button>

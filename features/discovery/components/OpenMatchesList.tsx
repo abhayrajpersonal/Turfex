@@ -12,7 +12,6 @@ interface OpenMatchesListProps {
 }
 
 const OpenMatchesList: React.FC<OpenMatchesListProps> = ({ matches, userId, onJoinMatch, onJoinNextGame, onRingerAlert }) => {
-  // We now show all matches, including LIVE ones, but handle them differently
   const sortedMatches = [...matches].sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
 
   if (sortedMatches.length === 0) return null;
@@ -36,7 +35,7 @@ const OpenMatchesList: React.FC<OpenMatchesListProps> = ({ matches, userId, onJo
           const isActive = match.status === 'LIVE' || new Date(match.start_time) < new Date();
           
           return (
-            <div key={match.id} className={`bg-white dark:bg-darkcard p-5 rounded-2xl border border-gray-100 dark:border-white/5 dark:bg-gradient-to-b dark:from-white/5 dark:to-transparent shadow-sm flex flex-col justify-between hover:border-blue-500 dark:hover:border-blue-500 transition-all duration-300 group relative overflow-hidden`}>
+            <div key={match.id} className={`bg-white dark:bg-darkcard p-5 rounded-2xl border border-gray-100 dark:border-white/5 dark:bg-gradient-to-b dark:from-white/5 dark:to-transparent shadow-sm flex flex-col justify-between hover:border-blue-500 dark:hover:border-volt/50 transition-all duration-300 group relative overflow-hidden`}>
               {/* Active Match Indicator */}
               {isActive && (
                   <div className="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl shadow-md z-10 flex items-center gap-1 animate-pulse">
@@ -49,7 +48,7 @@ const OpenMatchesList: React.FC<OpenMatchesListProps> = ({ matches, userId, onJo
                   <span className="text-[10px] font-black text-blue-600 bg-gradient-to-r from-blue-500/10 to-blue-500/20 border border-blue-500/20 px-2 py-1 rounded-md uppercase tracking-widest">{match.sport}</span>
                   {!isActive && <span className="text-xs font-medium text-gray-400 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded-md font-mono">{new Date(match.start_time).toLocaleDateString()}</span>}
                 </div>
-                <h4 className="font-bold text-lg text-midnight dark:text-white group-hover:text-blue-600 transition-colors tracking-tight">{match.turf?.name}</h4>
+                <h4 className="font-bold text-lg text-midnight dark:text-white group-hover:text-blue-600 dark:group-hover:text-volt transition-colors tracking-tight">{match.turf?.name}</h4>
                 <p className="text-sm text-gray-500 dark:text-gray-400">{match.turf?.location}</p>
                 
                 <div className="mt-5 flex items-center space-x-2">
@@ -66,15 +65,15 @@ const OpenMatchesList: React.FC<OpenMatchesListProps> = ({ matches, userId, onJo
                 </div>
               </div>
               
-              <div className="mt-5 pt-4 border-t border-gray-50 dark:border-gray-800 flex justify-between items-center">
+              <div className="mt-5 pt-4 border-t border-gray-50 dark:border-gray-800 flex justify-between items-center h-16">
                 {isActive ? (
                     <div className="w-full flex justify-between items-center">
                         <span className="text-xs text-gray-400 font-bold italic flex items-center gap-1"><Clock size={12}/> Match in progress</span>
                         <button 
                             onClick={() => onJoinNextGame(match)}
-                            className="bg-electric text-white px-4 py-2.5 rounded-xl text-xs font-bold hover:bg-blue-600 transition-all flex items-center gap-1 shadow-lg shadow-blue-500/20"
+                            className="bg-volt text-black px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-white transition-all flex items-center gap-1 shadow-lg shadow-volt/20"
                         >
-                            Join Next Game <ArrowRight size={12} />
+                            Join Next Game <ArrowRight size={14} />
                         </button>
                     </div>
                 ) : (
@@ -82,19 +81,19 @@ const OpenMatchesList: React.FC<OpenMatchesListProps> = ({ matches, userId, onJo
                         <div className="text-sm dark:text-gray-300">
                         <span className="font-bold text-midnight dark:text-white text-lg font-mono">{slotsLeft}</span> <span className="text-gray-400 text-xs uppercase font-bold tracking-wider">Slots Left</span>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 items-center">
                         {slotsLeft > 0 && (
                             <button onClick={onRingerAlert} className="p-2.5 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-xl transition-colors active:scale-95" title="Find Ringer">
-                            <Megaphone size={18} />
+                            <Megaphone size={20} />
                             </button>
                         )}
 
                         {isJoined ? (
-                            <span className="bg-gradient-to-r from-green-500/10 to-green-500/20 text-green-700 dark:text-green-400 border border-green-500/20 px-4 py-2 rounded-xl text-sm font-bold flex items-center"><Ticket size={16} className="mr-2"/> Joined</span>
+                            <span className="bg-gradient-to-r from-green-500/10 to-green-500/20 text-green-700 dark:text-green-400 border border-green-500/20 px-5 py-2.5 rounded-xl text-sm font-bold flex items-center"><Ticket size={16} className="mr-2"/> Joined</span>
                         ) : (
                             <button 
                             onClick={() => onJoinMatch(match.id)}
-                            className="bg-gray-100 dark:bg-gray-800 hover:bg-blue-600 hover:text-white text-midnight dark:text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-[0.98]"
+                            className="bg-zinc-800 text-white border border-zinc-700 hover:bg-volt hover:text-black hover:border-volt px-6 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-[0.98] shadow-sm"
                             >
                             Join Match
                             </button>

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { X, Share2, Award, Flag, Activity, MoreHorizontal } from 'lucide-react';
 import { OpenMatch, Sport } from '../../lib/types';
 import { useAuth } from '../../context/AuthContext';
-import { useData } from '../../context/DataContext'; // Import DataContext
+import { useData } from '../../context/DataContext';
 import { useMatchScoring } from '../../hooks/useMatchScoring';
 import ScoreboardDisplay from './ScoreboardDisplay';
 import CricketControls from './controls/CricketControls';
@@ -20,11 +20,10 @@ interface LiveMatchModalProps {
 
 const LiveMatchModal: React.FC<LiveMatchModalProps> = ({ match, onClose, onShare, onFinish }) => {
   const { user } = useAuth();
-  const { updateMatch } = useData(); // Get update function
+  const { updateMatch } = useData(); 
   const isHost = user?.id === match.host_id;
   const [status, setStatus] = useState(match.status);
   
-  // Pass updateMatch to hook for automatic persistence
   const { scoreboard, updateCricketScore, switchInnings, updateFootballScore, updateRacquetScore, toggleServer } = useMatchScoring(match, updateMatch);
 
   const handleFinishMatch = () => {
@@ -72,14 +71,14 @@ const LiveMatchModal: React.FC<LiveMatchModalProps> = ({ match, onClose, onShare
     <div className="fixed inset-0 bg-black/80 z-[90] flex justify-center items-center backdrop-blur-sm animate-fade-in-up">
         <div className="w-full h-full md:h-[85vh] md:w-[600px] md:rounded-3xl bg-white dark:bg-darkcard flex flex-col overflow-hidden shadow-2xl relative pt-safe-top md:pt-0">
             
-            {/* Header */}
-            <div className="bg-gradient-to-b from-gray-900 to-black p-4 text-white flex justify-between items-center z-10 shrink-0">
-                <button onClick={onClose} className="p-2 bg-white/10 rounded-full hover:bg-white/20"><X /></button>
+            {/* Header - Solid Black */}
+            <div className="bg-black p-4 text-white flex justify-between items-center z-10 shrink-0 border-b border-zinc-800">
+                <button onClick={onClose} className="p-2 bg-zinc-900 rounded-full hover:bg-zinc-800 transition-colors"><X /></button>
                 <div className="flex items-center gap-2">
                     <span className="bg-red-600 px-2 py-0.5 rounded text-[10px] font-bold animate-pulse flex items-center gap-1"><span className="w-1.5 h-1.5 bg-white rounded-full"></span> LIVE</span>
-                    <span className="font-bold tracking-wider uppercase text-sm">{match.sport}</span>
+                    <span className="font-bold tracking-wider uppercase text-sm text-zinc-300">{match.sport}</span>
                 </div>
-                <button onClick={onShare} className="p-2 bg-electric rounded-full hover:bg-blue-600"><Share2 size={18} /></button>
+                <button onClick={onShare} className="p-2 bg-electric text-black rounded-full hover:bg-white transition-colors"><Share2 size={18} /></button>
             </div>
 
             {/* Scoreboard Display Area (Visible to ALL) */}

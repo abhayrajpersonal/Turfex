@@ -1,5 +1,4 @@
 
-import { UserProfile } from './user';
 import { Turf } from './booking';
 
 export enum Sport {
@@ -48,7 +47,7 @@ export interface OpenMatch {
   start_time: string;
   status: 'OPEN' | 'FULL' | 'LIVE' | 'COMPLETED';
   turf?: Turf;
-  host?: UserProfile;
+  host?: any; // Break circular dependency with UserProfile
   share_token?: string;
   
   scoreboard?: {

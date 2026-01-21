@@ -14,26 +14,26 @@ const ProductCard: React.FC<ProductCardProps> = ({ item, onAddToCart }) => {
       onClick={() => onAddToCart(item)}
       className="bg-white dark:bg-darkcard rounded-2xl border border-gray-100 dark:border-white/5 dark:bg-gradient-to-b dark:from-white/5 dark:to-transparent overflow-hidden hover:shadow-xl transition-all duration-300 group flex flex-col h-full cursor-pointer"
     >
-      <div className="relative h-48 overflow-hidden bg-gray-100 dark:bg-gray-800 rounded-t-2xl">
+      <div className="relative h-48 overflow-hidden bg-gray-100 dark:bg-zinc-800 rounded-t-2xl">
         <img 
           src={item.image_url} 
           alt={item.name} 
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
         />
         {item.is_new && (
-          <span className="absolute top-3 left-3 bg-electric text-white text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-wider shadow-md border border-white/20">New Drop</span>
+          <span className="absolute top-3 left-3 bg-volt text-black text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-wider shadow-md">New Drop</span>
         )}
         {item.is_bestseller && (
-          <span className="absolute top-3 left-3 bg-orange-500 text-white text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-wider shadow-md border border-white/20">Best Seller</span>
+          <span className="absolute top-3 left-3 bg-white text-black text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-wider shadow-md">Best Seller</span>
         )}
         {item.original_price && (
-          <span className="absolute bottom-3 left-3 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-md font-mono border border-white/20">
+          <span className="absolute bottom-3 left-3 bg-black text-white text-[10px] font-bold px-2 py-1 rounded-md font-mono border border-white/20">
             {Math.round(((item.original_price - item.price) / item.original_price) * 100)}% OFF
           </span>
         )}
-        {/* UPDATED: opacity-100 by default on mobile, md:opacity-0 to hide on desktop until hover */}
+        {/* Button is now fully visible on mobile, and visible on hover on desktop */}
         <button 
-          className="absolute bottom-3 right-3 bg-white dark:bg-midnight text-midnight dark:text-white p-2 rounded-full shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 translate-y-0 md:translate-y-4 md:group-hover:translate-y-0 transition-all duration-300 hover:scale-110 active:scale-[0.9] active:brightness-90"
+          className="absolute bottom-3 right-3 bg-white text-black p-2 rounded-full shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 translate-y-0 md:translate-y-4 md:group-hover:translate-y-0 transition-all duration-300 hover:scale-110 active:scale-[0.9]"
         >
           <Plus size={20} />
         </button>
@@ -42,11 +42,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ item, onAddToCart }) => {
       <div className="p-4 flex-1 flex flex-col">
         <div className="flex justify-between items-start mb-1">
            <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">{item.category}</p>
-           <div className="flex items-center gap-1 text-[10px] font-bold bg-gradient-to-r from-yellow-500/10 to-yellow-500/20 text-yellow-700 dark:text-yellow-400 px-1.5 py-0.5 rounded border border-yellow-500/20">
+           <div className="flex items-center gap-1 text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 text-black dark:text-white px-1.5 py-0.5 rounded">
               <Star size={10} className="fill-current" /> {item.rating}
            </div>
         </div>
-        <h3 className="font-bold text-midnight dark:text-white text-base leading-tight mb-1 group-hover:text-electric transition-colors tracking-tight">{item.name}</h3>
+        <h3 className="font-bold text-midnight dark:text-white text-base leading-tight mb-1 group-hover:text-zinc-600 dark:group-hover:text-zinc-400 transition-colors tracking-tight">{item.name}</h3>
         <p className="text-xs text-gray-400 line-clamp-2 mb-4 flex-1">{item.description}</p>
         
         <div className="flex items-center justify-between mt-auto">

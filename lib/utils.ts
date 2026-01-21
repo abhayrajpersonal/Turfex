@@ -57,3 +57,39 @@ export const sendBrowserNotification = (title: string, body: string) => {
     }
   }
 };
+
+// Calendar Export
+export const downloadCalendarEvent = (booking: any) => {
+  if (!booking || !booking.start_time) return;
+  
+  const formatDateForICS = (dateStr: string) => {
+      return new Date(dateStr).toISOString().replace(/-|:|\.\d\d\d/g, "");
+  };
+
+  const start = formatDateForICS(booking.start_time);
+  const end = formatDateForICS(booking.end_time || booking.start_time); // Default to start if end missing
+  const title = `Game at ${booking.turf?.name || 'Turfex Venue'}`;
+  const location = booking.turf?.location || 'Unknown Location';
+  
+  const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Turfex//Sports Booking//EN
+BEGIN:VEVENT
+UID:${booking.id}@turfex.app
+DTSTAMP:${new Date().toISOString().replace(/-|:|\.\d\d\d/g, "")}
+DTSTART:${start}
+DTEND:${end}
+SUMMARY:${title}
+DESCRIPTION:Booked via Turfex. Sport: ${booking.sport}
+LOCATION:${location}
+END:VEVENT
+END:VCALENDAR`;
+
+  const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+  const link = document.createElement('a');
+  link.href = window.URL.createObjectURL(blob);
+  link.setAttribute('download', 'turfex-match.ics');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};

@@ -1,111 +1,127 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>Turfex - Social Sports Booking</title>
+    <title>Turfex - Pro Sports Booking</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Fredoka:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script>
       tailwind.config = {
         darkMode: 'class',
         theme: {
           extend: {
+            screens: {
+              'xs': '375px',
+              '3xl': '1920px',
+            },
             colors: {
-              electric: '#0057FF',
-              turfgreen: '#00A859',
-              sparklime: '#CCFF00',
-              midnight: '#1A1A1A',
-              courtgray: '#A0A4B8',
-              offwhite: '#F8F9FC',
-              purewhite: '#FFFFFF',
-              lime: '#CCFF00',
-              coral: '#FF7043',
-              darkbg: '#121212',
-              darkcard: '#1E1E1E',
+              // The Volt Accent (High Visibility)
+              volt: '#DFFF00', 
+              'volt-hover': '#CCFF00',
+              
+              // Monochrome Scale
+              obsidian: '#000000',     // True Black
+              charcoal: '#09090B',     // Zinc 950
+              armor: '#18181B',        // Zinc 900
+              steel: '#27272A',        // Zinc 800
+              ash: '#71717A',          // Zinc 500
+              mist: '#A1A1AA',         // Zinc 400
+              
+              // Semantic Colors (Muted/Neon)
+              danger: '#FF2E2E',
+              success: '#00FF94',
+              warning: '#FFC700',
+              info: '#00B8FF',
+
+              // Legacy mappings remapped to new system
+              electric: '#DFFF00', // Remap electric blue to Volt
+              midnight: '#050505',
+              darkbg: '#000000',
+              darkcard: '#121212',
             },
             fontFamily: {
-              sans: ['Poppins', 'sans-serif'],
-              display: ['Fredoka', 'sans-serif'],
-              mono: ['"Chakra Petch"', 'monospace'],
+              sans: ['Inter', 'sans-serif'],
+              display: ['Oswald', 'sans-serif'], // Athletic font
             },
-            animation: {
-              'shimmer': 'shimmer 2s linear infinite',
-              'wiggle': 'wiggle 0.5s ease-in-out',
-              'scale-in': 'scale-in 0.2s ease-out',
-              'fade-in-up': 'fade-in-up 0.3s ease-out',
-            },
-            keyframes: {
-              shimmer: {
-                '0%': { backgroundPosition: '200% 0' },
-                '100%': { backgroundPosition: '-200% 0' },
-              },
-              wiggle: {
-                '0%, 100%': { transform: 'rotate(-3deg)' },
-                '50%': { transform: 'rotate(3deg)' },
-              },
-              'scale-in': {
-                '0%': { transform: 'scale(0.95)', opacity: '0' },
-                '100%': { transform: 'scale(1)', opacity: '1' },
-              },
-              'fade-in-up': {
-                '0%': { transform: 'translate(-50%, 20px)', opacity: '0' },
-                '100%': { transform: 'translate(-50%, 0)', opacity: '1' },
-              }
+            borderRadius: {
+              'xl': '0.75rem',
+              '2xl': '1rem',
+              '3xl': '1.5rem',
             },
             padding: {
+              'safe-top': 'env(safe-area-inset-top)',
               'safe-bottom': 'env(safe-area-inset-bottom)',
+            },
+            animation: {
+              'fade-in-up': 'fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+              'scale-in': 'scale-in 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+              'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            },
+            keyframes: {
+              'fade-in-up': {
+                '0%': { transform: 'translateY(10px)', opacity: '0' },
+                '100%': { transform: 'translateY(0)', opacity: '1' },
+              },
+              'scale-in': {
+                '0%': { transform: 'scale(0.98)', opacity: '0' },
+                '100%': { transform: 'scale(1)', opacity: '1' },
+              }
             }
           }
         }
       }
     </script>
     <style>
-      body {
-        background-color: #F8F9FC;
-        color: #1A1A1A;
-        -webkit-tap-highlight-color: transparent;
-      }
-      .dark body {
-        background-color: #121212;
-        color: #FDFDFD;
-      }
-      
-      /* Noise Texture Overlay */
-      .bg-noise {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        z-index: 50;
-        opacity: 0.03;
-        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      :root {
+        font-size: 16px;
       }
 
-      ::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
+      body {
+        background-color: #000000;
+        color: #FFFFFF;
+        -webkit-tap-highlight-color: transparent;
+        margin: 0;
+        padding: 0;
+        font-family: 'Inter', sans-serif;
       }
-      ::-webkit-scrollbar-track { background: transparent; }
-      .dark ::-webkit-scrollbar-track { background: #2E2E2E; }
-      ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 10px; }
-      .dark ::-webkit-scrollbar-thumb { background: #4B5563; }
-      ::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
+
+      #root {
+        width: 100%;
+        max-width: 1920px;
+        min-height: 100dvh;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Scrollbar */
+      ::-webkit-scrollbar { width: 4px; height: 4px; }
+      ::-webkit-scrollbar-track { background: #09090B; }
+      ::-webkit-scrollbar-thumb { background: #27272A; border-radius: 4px; }
+      ::-webkit-scrollbar-thumb:hover { background: #DFFF00; }
+      
       .scrollbar-hide::-webkit-scrollbar { display: none; }
       .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
       
-      :focus-visible { outline: 2px solid #0057FF; outline-offset: 2px; }
-      button:focus:not(:focus-visible) { outline: none; }
+      /* Sharp Focus States */
+      :focus-visible { outline: 2px solid #DFFF00; outline-offset: 2px; }
       
-      /* Leaflet Custom Overrides */
-      .leaflet-popup-content-wrapper { border-radius: 12px; padding: 0; overflow: hidden; }
-      .leaflet-popup-content { margin: 0; }
+      /* Leaflet Overrides for Dark Mode */
+      .leaflet-popup-content-wrapper { 
+        border-radius: 0; 
+        padding: 0; 
+        overflow: hidden;
+        background: #18181B; 
+        color: white;
+        border: 1px solid #333;
+      }
+      .leaflet-popup-tip { background: #18181B; }
+      .leaflet-container { font-family: 'Inter', sans-serif; }
     </style>
   <script type="importmap">
 {
@@ -118,7 +134,8 @@
     "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.90.1",
     "leaflet": "https://esm.sh/leaflet@1.9.4",
     "clsx": "https://esm.sh/clsx@2.1.0",
-    "tailwind-merge": "https://esm.sh/tailwind-merge@2.2.1"
+    "tailwind-merge": "https://esm.sh/tailwind-merge@2.2.1",
+    "@google/genai": "https://esm.sh/@google/genai@^1.38.0"
   }
 }
 </script>

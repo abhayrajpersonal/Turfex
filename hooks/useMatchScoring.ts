@@ -1,37 +1,77 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { OpenMatch, Sport } from '../lib/types';
 
-export const useMatchScoring = (match: OpenMatch, onUpdate?: (newScoreboard: any) => void) => {
+export const useMatchScoring = (match: OpenMatch, updateMatchContext: (id: string, data: Partial<OpenMatch>) => void) => {
+  // Initialize state from the match prop to ensure we pick up persisted data
   const [scoreboard, setScoreboard] = useState(match.scoreboard);
+
+  // Sync local state if match prop updates externally (e.g. from context)
+  useEffect(() => {
+    setScoreboard(match.scoreboard);
+  }, [match.scoreboard]);
+
+  const persist = (newScoreboard: any) => {
+      setScoreboard(newScoreboard);
+      updateMatchContext(match.id, { scoreboard: newScoreboard });
+  };
 
   const updateCricketScore = (runs: number, isWicket: boolean, isExtra: boolean) => {
     if (!scoreboard?.cricket) return;
-    const currentTeamKey = 'team_a'; // Simplified: Assume Team A batting for demo
-    const teamScore = { ...scoreboard.cricket[currentTeamKey] };
+    
+    // Determine batting team based on is_batting_first flag
+    // In a real app, this would be more complex state machine
+    const battingTeamKey = scoreboard.cricket.team_a.is_batting_first ? 'team_a' : 'team_b';
+    const bowlingTeamKey = battingTeamKey === 'team_a' ? 'team_b' : 'team_a';
 
+    const battingTeamScore = { ...scoreboard.cricket[battingTeamKey] };
+    const bowlingTeamScore = { ...scoreboard.cricket[bowlingTeamKey] };
+
+    // Update Runs/Wickets
     if (isWicket) {
-        teamScore.wickets += 1;
-        teamScore.balls += 1;
+        battingTeamScore.wickets += 1;
+        battingTeamScore.balls += 1; // Wicket counts as a ball
     } else if (isExtra) {
-        teamScore.runs += 1; // Wide/NoBall
+        battingTeamScore.runs += 1; // Wide/NoBall doesn't count as legal ball usually, simplified here
+        // Note: For simplicity in this demo, we aren't adding extra balls for wides
     } else {
-        teamScore.runs += runs;
-        teamScore.balls += 1;
+        battingTeamScore.runs += runs;
+        battingTeamScore.balls += 1;
     }
 
-    if (teamScore.balls === 6) {
-        teamScore.overs += 1;
-        teamScore.balls = 0;
+    // Over Logic
+    if (battingTeamScore.balls === 6) {
+        battingTeamScore.overs += 1;
+        battingTeamScore.balls = 0;
     }
 
+    // Auto-Switch Innings Logic (Simplified: Switch if 10 wickets or 20 overs)
+    // Note: This logic could be expanded
+    
     const newScoreboard = {
         ...scoreboard,
-        cricket: { ...scoreboard.cricket, [currentTeamKey]: teamScore },
-        last_update: 'Just now'
+        cricket: { 
+            ...scoreboard.cricket, 
+            [battingTeamKey]: battingTeamScore,
+            [bowlingTeamKey]: bowlingTeamScore 
+        },
+        last_update: isWicket ? 'WICKET!' : `${runs} Runs`
     };
 
-    setScoreboard(newScoreboard);
-    if(onUpdate) onUpdate(newScoreboard);
+    persist(newScoreboard);
+  };
+
+  const switchInnings = () => {
+      if (!scoreboard?.cricket) return;
+      const newScoreboard = {
+          ...scoreboard,
+          cricket: {
+              team_a: { ...scoreboard.cricket.team_a, is_batting_first: !scoreboard.cricket.team_a.is_batting_first },
+              team_b: { ...scoreboard.cricket.team_b, is_batting_first: !scoreboard.cricket.team_b.is_batting_first }
+          },
+          last_update: 'Innings Switched'
+      };
+      persist(newScoreboard);
   };
 
   const updateFootballScore = (team: 'A' | 'B') => {
@@ -43,11 +83,10 @@ export const useMatchScoring = (match: OpenMatch, onUpdate?: (newScoreboard: any
       const newScoreboard = {
           ...scoreboard,
           football: newScore,
-          last_update: 'Goal scored!'
+          last_update: `GOAL for Team ${team}!`
       };
 
-      setScoreboard(newScoreboard);
-      if(onUpdate) onUpdate(newScoreboard);
+      persist(newScoreboard);
   };
 
   const updateRacquetScore = (team: 'A' | 'B') => {
@@ -56,30 +95,25 @@ export const useMatchScoring = (match: OpenMatch, onUpdate?: (newScoreboard: any
       const currentSetIdx = scoreboard.racquet.current_set;
       const currentSets = [...scoreboard.racquet.sets];
       
-      // Initialize set if needed
       if (!currentSets[currentSetIdx]) {
           currentSets[currentSetIdx] = { a: 0, b: 0 };
       }
 
       const currentSetScore = { ...currentSets[currentSetIdx] };
       
-      if (team === 'A') {
-          currentSetScore.a += 1;
-      } else {
-          currentSetScore.b += 1;
-      }
+      if (team === 'A') currentSetScore.a += 1;
+      else currentSetScore.b += 1;
       
       currentSets[currentSetIdx] = currentSetScore;
 
-      // Check for set completion (Simple rule: 21 points, win by 2)
-      // For demo we use 21 for all, ideally this would be configurable based on Sport
+      // Win Logic (21 pts, win by 2)
       const WIN_POINT = match.sport === Sport.PICKLEBALL ? 11 : 21;
       const isSetComplete = (currentSetScore.a >= WIN_POINT || currentSetScore.b >= WIN_POINT) && Math.abs(currentSetScore.a - currentSetScore.b) >= 2;
 
       let nextSetIdx = currentSetIdx;
       if (isSetComplete) {
           nextSetIdx += 1;
-          currentSets.push({ a: 0, b: 0 }); // Prep next set
+          currentSets.push({ a: 0, b: 0 }); 
       }
 
       const newScoreboard = {
@@ -88,13 +122,12 @@ export const useMatchScoring = (match: OpenMatch, onUpdate?: (newScoreboard: any
               ...scoreboard.racquet,
               sets: currentSets,
               current_set: nextSetIdx,
-              server: team // Winner serves usually
+              server: team 
           },
-          last_update: isSetComplete ? `Set ${currentSetIdx + 1} Finished!` : 'Point Scored'
+          last_update: isSetComplete ? `Set ${currentSetIdx + 1} Finished!` : 'Point'
       };
 
-      setScoreboard(newScoreboard);
-      if (onUpdate) onUpdate(newScoreboard);
+      persist(newScoreboard);
   };
 
   const toggleServer = () => {
@@ -102,18 +135,15 @@ export const useMatchScoring = (match: OpenMatch, onUpdate?: (newScoreboard: any
       const newServer: 'A' | 'B' = scoreboard.racquet.server === 'A' ? 'B' : 'A';
       const newScoreboard = {
           ...scoreboard,
-          racquet: {
-              ...scoreboard.racquet,
-              server: newServer
-          }
+          racquet: { ...scoreboard.racquet, server: newServer }
       };
-      setScoreboard(newScoreboard);
-      if (onUpdate) onUpdate(newScoreboard);
+      persist(newScoreboard);
   };
 
   return {
     scoreboard,
     updateCricketScore,
+    switchInnings,
     updateFootballScore,
     updateRacquetScore,
     toggleServer

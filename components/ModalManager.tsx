@@ -29,6 +29,7 @@ const DailySpinModal = React.lazy(() => import('./common/DailySpinModal'));
 const GalleryModal = React.lazy(() => import('./GalleryModal'));
 const SupportModal = React.lazy(() => import('./SupportModal'));
 const EmergencyModal = React.lazy(() => import('./EmergencyModal'));
+const ReportPlayerModal = React.lazy(() => import('./ReportPlayerModal')); // New Import
 
 const ModalLoader = () => (
   <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/10 backdrop-blur-sm">
@@ -43,7 +44,7 @@ const ModalManager: React.FC = () => {
 
   const handleClose = () => setActiveModal(null);
 
-  const confirmBooking = (date: string, time: string, sport: Sport, addOns: string[], equipment: string[], price: number, splitWith: string[], paymentMode: any, corporateDetails?: CorporateDetails) => {
+  const confirmBooking = (date: string, time: string, sport: Sport, addOns: string[], equipment: string[], price: number, splitWith: string[], paymentMode: any, corporateDetails?: CorporateDetails, hasInsurance?: boolean) => {
     if (!user || !modalData?.turf) return;
     
     const newBooking: Booking = {
@@ -62,7 +63,8 @@ const ModalManager: React.FC = () => {
       rental_items: equipment,
       // @ts-ignore
       add_ons: addOns,
-      corporate_details: corporateDetails
+      corporate_details: corporateDetails,
+      has_insurance: hasInsurance
     };
 
     addBooking(newBooking);
@@ -206,6 +208,21 @@ const ModalManager: React.FC = () => {
       triggerConfetti();
   };
 
+  const handleSubmitReview = (rating: number, privateFeedback: string) => {
+      handleClose();
+      showToast("Review submitted!", "success");
+      if (privateFeedback) {
+          // In real app, send to separate endpoint
+          console.log("Private Feedback:", privateFeedback);
+      }
+  };
+
+  const handleReportPlayer = (data: any) => {
+      handleClose();
+      showToast("Report submitted. We will investigate.", "error");
+      // In real app, trigger backend karma logic
+  };
+
   if (!activeModal || !user) return (
       <>
         {showConfetti && <Confetti />}
@@ -227,7 +244,7 @@ const ModalManager: React.FC = () => {
         />
       )}
       {activeModal === 'review' && modalData && (
-         <ReviewModal booking={modalData} onClose={handleClose} onSubmit={() => { handleClose(); showToast("Thanks!"); }} />
+         <ReviewModal booking={modalData} onClose={handleClose} onSubmit={handleSubmitReview} />
       )}
       {activeModal === 'kyc' && (
         <KycModal onClose={handleClose} onComplete={() => { completeKyc(); handleClose(); showToast("KYC Verified!"); }} />
@@ -296,6 +313,9 @@ const ModalManager: React.FC = () => {
       )}
       {activeModal === 'emergency' && (
         <EmergencyModal onClose={handleClose} />
+      )}
+      {activeModal === 'report_player' && (
+        <ReportPlayerModal onClose={handleClose} onSubmit={handleReportPlayer} />
       )}
     </Suspense>
   );

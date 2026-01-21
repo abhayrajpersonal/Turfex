@@ -62,6 +62,7 @@ export interface UserProfile {
   stats: PlayerStats;
   credibility?: CredibilityScore;
   last_spin_date?: string; // For Daily Spin
+  karma_score?: number; // New: Karma System (0-100)
 }
 
 export interface WalletTransaction {

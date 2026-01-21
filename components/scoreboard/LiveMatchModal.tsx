@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { X, Share2, Award, Flag, Activity, MoreHorizontal } from 'lucide-react';
 import { OpenMatch, Sport } from '../../lib/types';
 import { useAuth } from '../../context/AuthContext';
+import { useData } from '../../context/DataContext'; // Import DataContext
 import { useMatchScoring } from '../../hooks/useMatchScoring';
 import ScoreboardDisplay from './ScoreboardDisplay';
 import CricketControls from './controls/CricketControls';
@@ -19,11 +20,12 @@ interface LiveMatchModalProps {
 
 const LiveMatchModal: React.FC<LiveMatchModalProps> = ({ match, onClose, onShare, onFinish }) => {
   const { user } = useAuth();
+  const { updateMatch } = useData(); // Get update function
   const isHost = user?.id === match.host_id;
   const [status, setStatus] = useState(match.status);
   
-  // Use the new hook for scoring logic
-  const { scoreboard, updateCricketScore, updateFootballScore, updateRacquetScore, toggleServer } = useMatchScoring(match);
+  // Pass updateMatch to hook for automatic persistence
+  const { scoreboard, updateCricketScore, switchInnings, updateFootballScore, updateRacquetScore, toggleServer } = useMatchScoring(match, updateMatch);
 
   const handleFinishMatch = () => {
       if(!onFinish) return;
@@ -35,7 +37,6 @@ const LiveMatchModal: React.FC<LiveMatchModalProps> = ({ match, onClose, onShare
           winner = scoreboard.football.team_a > scoreboard.football.team_b ? scoreboard.team_a_name : 
                    scoreboard.football.team_b > scoreboard.football.team_a ? scoreboard.team_b_name : 'Draw';
       } else if (scoreboard?.racquet) {
-          // Count sets won
           let setsA = 0;
           let setsB = 0;
           scoreboard.racquet.sets.forEach((s: any) => {
@@ -69,7 +70,6 @@ const LiveMatchModal: React.FC<LiveMatchModalProps> = ({ match, onClose, onShare
 
   return (
     <div className="fixed inset-0 bg-black/80 z-[90] flex justify-center items-center backdrop-blur-sm animate-fade-in-up">
-        {/* Added pt-safe-top to avoid notch on mobile */}
         <div className="w-full h-full md:h-[85vh] md:w-[600px] md:rounded-3xl bg-white dark:bg-darkcard flex flex-col overflow-hidden shadow-2xl relative pt-safe-top md:pt-0">
             
             {/* Header */}
@@ -100,9 +100,21 @@ const LiveMatchModal: React.FC<LiveMatchModalProps> = ({ match, onClose, onShare
                         </div>
                         <p className="text-xs text-gray-400 mb-6">You are the host. Updates here reflect for all spectators.</p>
                         
-                        {match.sport === Sport.CRICKET && <CricketControls onUpdateScore={updateCricketScore} />}
+                        {match.sport === Sport.CRICKET && (
+                            <CricketControls 
+                                onUpdateScore={updateCricketScore} 
+                                onSwitchInnings={switchInnings} 
+                                isBattingFirst={scoreboard?.cricket?.team_a.is_batting_first}
+                            />
+                        )}
                         
-                        {match.sport === Sport.FOOTBALL && <FootballControls teamA={scoreboard?.team_a_name || 'A'} teamB={scoreboard?.team_b_name || 'B'} onGoal={updateFootballScore} />}
+                        {match.sport === Sport.FOOTBALL && (
+                            <FootballControls 
+                                teamA={scoreboard?.team_a_name || 'A'} 
+                                teamB={scoreboard?.team_b_name || 'B'} 
+                                onGoal={updateFootballScore} 
+                            />
+                        )}
                         
                         {isRacquetSport && scoreboard?.racquet && (
                             <RacquetControls 
@@ -130,18 +142,13 @@ const LiveMatchModal: React.FC<LiveMatchModalProps> = ({ match, onClose, onShare
                            <span className="text-xs text-gray-400 font-medium">Real-time</span>
                         </div>
                         <div className="space-y-6 pl-4 border-l-2 border-gray-100 dark:border-gray-800 ml-2">
-                            {[1,2,3].map(i => (
-                                <div key={i} className="relative animate-fade-in-up" style={{animationDelay: `${i*100}ms`}}>
-                                    <div className="absolute -left-[21px] top-0 w-3 h-3 bg-gray-200 dark:bg-gray-700 rounded-full border-2 border-white dark:border-darkcard"></div>
-                                    <div className="text-xs font-bold text-gray-400 mb-1">Live Update</div>
-                                    <p className="text-sm text-midnight dark:text-white font-medium">
-                                        {i === 1 ? "Point scored!" : "Good rally."}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl text-center text-xs text-gray-500 mt-8">
-                            Updates appear automatically as the host scores.
+                            <div className="relative animate-fade-in-up">
+                                <div className="absolute -left-[21px] top-0 w-3 h-3 bg-electric rounded-full border-2 border-white dark:border-darkcard animate-pulse"></div>
+                                <div className="text-xs font-bold text-electric mb-1">Latest Update</div>
+                                <p className="text-sm text-midnight dark:text-white font-medium">
+                                    {scoreboard?.last_update || "Match in progress"}
+                                </p>
+                            </div>
                         </div>
                      </div>
                  )}

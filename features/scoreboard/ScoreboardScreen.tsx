@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { Gamepad2, Plus, Play, Share2, ArrowRight, Trophy } from 'lucide-react';
-import { Sport, OpenMatch, Team } from '../../lib/types';
+import { Gamepad2, Plus, Play, Share2 } from 'lucide-react';
+import { Sport, OpenMatch } from '../../lib/types';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { useUI } from '../../context/UIContext';
@@ -48,7 +48,6 @@ const ScoreboardScreen: React.FC = () => {
           };
       }
 
-      // In a real app, this would make an API call to create the match
       const newMatch: OpenMatch = {
           id: `live-${Date.now()}`,
           host_id: user?.id || 'guest',
@@ -61,9 +60,7 @@ const ScoreboardScreen: React.FC = () => {
           scoreboard: initialScoreboard
       };
 
-      // ADD MATCH TO CONTEXT SO IT PERSISTS
       addMatch(newMatch);
-
       setActiveModal('live_match', newMatch);
       setView('LANDING');
       setTeamA('');
@@ -74,7 +71,7 @@ const ScoreboardScreen: React.FC = () => {
       return (
           <div className="animate-fade-in-up max-w-lg mx-auto">
               <div className="flex items-center gap-3 mb-6">
-                  <button onClick={() => setView('LANDING')} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">←</button>
+                  <button onClick={() => setView('LANDING')} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-black dark:text-white">←</button>
                   <h2 className="text-2xl font-bold font-display text-midnight dark:text-white">Setup Match</h2>
               </div>
 
@@ -86,7 +83,7 @@ const ScoreboardScreen: React.FC = () => {
                               <button 
                                 key={sport}
                                 onClick={() => setSelectedSport(sport as Sport)}
-                                className={`p-3 rounded-xl border flex flex-col items-center gap-2 transition-all ${selectedSport === sport ? 'bg-electric text-white border-electric shadow-lg shadow-blue-500/20' : 'bg-gray-50 dark:bg-gray-800 border-transparent text-gray-500 hover:bg-gray-100'}`}
+                                className={`p-3 rounded-xl border flex flex-col items-center gap-2 transition-all ${selectedSport === sport ? 'bg-volt text-black border-volt shadow-lg shadow-volt/20' : 'bg-gray-50 dark:bg-zinc-800 border-transparent text-gray-500 hover:bg-gray-100 dark:hover:bg-zinc-700'}`}
                               >
                                   <span className="text-2xl">{SPORTS_ICONS[sport as Sport]}</span>
                                   <span className="text-xs font-bold">{sport}</span>
@@ -101,7 +98,7 @@ const ScoreboardScreen: React.FC = () => {
                           <input 
                             value={teamA}
                             onChange={(e) => setTeamA(e.target.value)}
-                            className="w-full bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700 outline-none focus:ring-2 focus:ring-electric font-bold text-midnight dark:text-white"
+                            className="w-full bg-gray-50 dark:bg-zinc-800 p-3 rounded-xl border border-gray-100 dark:border-zinc-700 outline-none focus:ring-2 focus:ring-volt font-bold text-midnight dark:text-white"
                             placeholder="Home Team"
                           />
                       </div>
@@ -110,7 +107,7 @@ const ScoreboardScreen: React.FC = () => {
                           <input 
                             value={teamB}
                             onChange={(e) => setTeamB(e.target.value)}
-                            className="w-full bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700 outline-none focus:ring-2 focus:ring-electric font-bold text-midnight dark:text-white"
+                            className="w-full bg-gray-50 dark:bg-zinc-800 p-3 rounded-xl border border-gray-100 dark:border-zinc-700 outline-none focus:ring-2 focus:ring-volt font-bold text-midnight dark:text-white"
                             placeholder="Away Team"
                           />
                       </div>
@@ -119,7 +116,7 @@ const ScoreboardScreen: React.FC = () => {
                   <div className="pt-4">
                       <button 
                         onClick={handleStartGame}
-                        className="w-full bg-electric text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all"
+                        className="w-full bg-black dark:bg-white text-white dark:text-black font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all"
                       >
                           <Play size={20} fill="currentColor" /> Start Live Match
                       </button>
@@ -132,52 +129,52 @@ const ScoreboardScreen: React.FC = () => {
   return (
     <div className="space-y-8 animate-fade-in-up">
         {/* Hero Section */}
-        <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-3xl p-8 text-white relative overflow-hidden shadow-xl">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
+        <div className="bg-zinc-900 rounded-3xl p-8 text-white relative overflow-hidden shadow-xl border border-zinc-800">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
             <div className="relative z-10 max-w-md">
-                <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold mb-4 border border-white/20">
-                    <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span> Live Scoring Engine
+                <div className="inline-flex items-center gap-2 bg-volt text-black px-3 py-1 rounded-full text-xs font-black mb-4 uppercase tracking-wider">
+                    <span className="w-2 h-2 bg-black rounded-full animate-pulse"></span> Live Scoring
                 </div>
                 <h2 className="text-3xl md:text-4xl font-display font-bold mb-4 leading-tight">Broadcast your game to the world.</h2>
-                <p className="text-indigo-100 mb-8 font-medium">Create a live scoreboard link for any match. Friends can watch real-time scores without logging in.</p>
+                <p className="text-zinc-400 mb-8 font-medium">Create a live scoreboard link. Friends can watch real-time scores without logging in.</p>
                 <button 
                   onClick={() => setView('CREATE')}
-                  className="bg-white text-indigo-600 px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-gray-50 transition-all shadow-lg active:scale-95"
+                  className="bg-white text-black px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-zinc-200 transition-all shadow-lg active:scale-95"
                 >
                     <Plus size={20} strokeWidth={3} /> Start My Game
                 </button>
             </div>
-            <Gamepad2 size={200} className="absolute -bottom-10 -right-10 text-white/10 rotate-12" />
+            <Gamepad2 size={200} className="absolute -bottom-10 -right-10 text-white/5 rotate-12" />
         </div>
 
         {/* Active Matches Section */}
         <div>
             <h3 className="text-xl font-bold text-midnight dark:text-white mb-4 flex items-center gap-2">
                 Your Active Matches 
-                {myHostedMatches.length > 0 && <span className="bg-electric text-white text-xs px-2 py-0.5 rounded-full">{myHostedMatches.length}</span>}
+                {myHostedMatches.length > 0 && <span className="bg-volt text-black text-xs px-2 py-0.5 rounded-full">{myHostedMatches.length}</span>}
             </h3>
             
             {myHostedMatches.length === 0 ? (
-                <div className="bg-white dark:bg-darkcard border border-dashed border-gray-200 dark:border-gray-700 rounded-2xl p-10 text-center">
-                    <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-3 text-gray-300">
-                        <Trophy size={32} />
+                <div className="bg-white dark:bg-darkcard border border-dashed border-gray-200 dark:border-zinc-700 rounded-2xl p-10 text-center">
+                    <div className="w-16 h-16 bg-gray-50 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-3 text-gray-300">
+                        <Gamepad2 size={32} />
                     </div>
                     <p className="text-gray-400 font-medium">No matches running currently.</p>
                 </div>
             ) : (
                 <div className="grid gap-4 md:grid-cols-2">
                     {myHostedMatches.map(match => (
-                        <div key={match.id} className="bg-white dark:bg-darkcard p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow group">
+                        <div key={match.id} className="bg-white dark:bg-darkcard p-5 rounded-2xl border border-gray-100 dark:border-zinc-700 shadow-sm hover:shadow-md transition-shadow group">
                             <div className="flex justify-between items-start mb-4">
-                                <span className="text-[10px] font-bold uppercase tracking-wider bg-gray-100 dark:bg-gray-800 text-gray-500 px-2 py-1 rounded">{match.sport}</span>
-                                <span className="text-xs font-bold text-red-500 animate-pulse flex items-center gap-1">● LIVE</span>
+                                <span className="text-[10px] font-bold uppercase tracking-wider bg-gray-100 dark:bg-zinc-800 text-gray-500 px-2 py-1 rounded">{match.sport}</span>
+                                <span className="text-xs font-bold text-volt animate-pulse flex items-center gap-1">● LIVE</span>
                             </div>
                             
                             <div className="flex justify-between items-center mb-6">
                                 <div className="text-center">
                                     <p className="font-bold text-lg text-midnight dark:text-white">{match.scoreboard?.team_a_name}</p>
                                 </div>
-                                <div className="text-xs font-bold text-gray-400 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded-lg">VS</div>
+                                <div className="text-xs font-bold text-gray-400 bg-gray-50 dark:bg-zinc-800 px-2 py-1 rounded-lg">VS</div>
                                 <div className="text-center">
                                     <p className="font-bold text-lg text-midnight dark:text-white">{match.scoreboard?.team_b_name}</p>
                                 </div>
@@ -186,7 +183,7 @@ const ScoreboardScreen: React.FC = () => {
                             <div className="flex gap-2">
                                 <button 
                                   onClick={() => setActiveModal('live_match', match)}
-                                  className="flex-1 bg-electric text-white py-2 rounded-xl text-sm font-bold hover:bg-blue-600 transition-colors"
+                                  className="flex-1 bg-black dark:bg-white text-white dark:text-black py-2 rounded-xl text-sm font-bold hover:opacity-90 transition-colors"
                                 >
                                     Resume Scoring
                                 </button>
@@ -195,7 +192,7 @@ const ScoreboardScreen: React.FC = () => {
                                       navigator.clipboard.writeText(`https://turfex.app/live/${match.id}`);
                                       showToast("Link copied!");
                                   }}
-                                  className="p-2 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                                  className="p-2 border border-gray-200 dark:border-zinc-700 rounded-xl text-gray-500 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
                                 >
                                     <Share2 size={20} />
                                 </button>

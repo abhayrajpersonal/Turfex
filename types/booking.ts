@@ -49,4 +49,5 @@ export interface Booking {
     gst_number: string;
   };
   coach_id?: string; // For specific coach bookings
+  has_insurance?: boolean; // New: Booking Insurance
 }

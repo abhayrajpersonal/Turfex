@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import Toast from '../components/common/Toast';
 
-export type ModalType = 'booking' | 'kyc' | 'profile' | 'subscription' | 'wallet' | 'qr' | 'review' | 'create_team' | 'live_match' | 'endorsement' | 'ringer' | 'bracket' | 'cart' | 'product_details' | 'tournament_register' | 'coach_booking' | 'daily_spin' | 'gallery' | 'support' | 'emergency' | null;
+export type ModalType = 'booking' | 'kyc' | 'profile' | 'subscription' | 'wallet' | 'qr' | 'review' | 'create_team' | 'live_match' | 'endorsement' | 'ringer' | 'bracket' | 'cart' | 'product_details' | 'tournament_register' | 'coach_booking' | 'daily_spin' | 'gallery' | 'support' | 'emergency' | 'report_player' | null;
 
 interface UIContextType {
   activeTab: string;

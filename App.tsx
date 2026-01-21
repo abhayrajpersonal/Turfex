@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Loader2, MessageCircle, X } from 'lucide-react';
+import { Loader2, Bot, X } from 'lucide-react';
 import Layout from './components/layout/Layout';
 import ChatWindow from './components/ChatWindow';
 import NotificationPanel from './components/feedback/NotificationPanel';
@@ -21,7 +21,6 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { UIProvider, useUI } from './context/UIContext';
 import { DataProvider, useData } from './context/DataContext';
 import { LanguageProvider } from './context/LanguageContext';
-import { MOCK_CHATS } from './lib/mockData';
 import { UserType } from './lib/types';
 
 // The Main App Component logic isolated from Providers
@@ -36,8 +35,8 @@ const TurfexApp = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-darkbg">
-        <Loader2 className="animate-spin text-electric" size={48} />
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black">
+        <Loader2 className="animate-spin text-black dark:text-white" size={48} />
       </div>
     );
   }
@@ -75,13 +74,14 @@ const TurfexApp = () => {
         {renderContent()}
       </div>
 
-      {/* Floating Chat Button - Moved UP to bottom-24 on mobile to clear nav pill */}
+      {/* Floating Virtual Coach Button */}
       {user.user_type === UserType.PLAYER && (
           <button 
              onClick={() => setIsChatOpen(!isChatOpen)}
-             className="fixed bottom-24 md:bottom-6 right-6 bg-electric text-white p-4 rounded-full shadow-lg shadow-blue-500/40 hover:bg-blue-600 transition-all z-40 active:scale-95"
+             className={`fixed bottom-24 md:bottom-6 right-6 p-4 rounded-full shadow-2xl transition-all z-40 active:scale-95 flex items-center justify-center border-2 border-white/10 ${isChatOpen ? 'bg-zinc-800 text-white' : 'bg-black text-volt hover:scale-110'}`}
+             aria-label="Open Virtual Coach"
           >
-             {isChatOpen ? <X /> : <MessageCircle />}
+             {isChatOpen ? <X /> : <Bot size={28} />}
           </button>
       )}
 
@@ -94,7 +94,7 @@ const TurfexApp = () => {
       />
 
       {isChatOpen && (
-          <ChatWindow isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} chats={MOCK_CHATS} user={user} />
+          <ChatWindow isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} user={user} />
       )}
 
       <ModalManager />

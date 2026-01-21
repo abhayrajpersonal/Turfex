@@ -24,14 +24,14 @@ const NavItem = ({ id, icon: Icon, label, activeTab, setActiveTab, onClick }: an
         setActiveTab(id);
         onClick();
       }}
-      className={`relative flex items-center space-x-3 px-4 py-3 rounded-2xl w-full transition-all duration-200 group ${
+      className={`relative flex items-center space-x-4 px-4 py-4 w-full transition-all duration-200 border-l-2 ${
         activeTab === id 
-          ? 'bg-electric/10 text-electric font-bold' 
-          : 'text-courtgray dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-midnight dark:hover:text-white'
+          ? 'border-blue-600 dark:border-volt bg-gray-100 dark:bg-zinc-900 text-midnight dark:text-white font-bold' 
+          : 'border-transparent text-gray-500 dark:text-zinc-500 hover:text-midnight dark:hover:text-white'
       }`}
     >
-      <Icon size={20} />
-      <span>{label}</span>
+      <Icon size={20} className={activeTab === id ? 'text-blue-600 dark:text-volt' : ''} />
+      <span className="uppercase tracking-widest text-sm">{label}</span>
     </button>
 );
 
@@ -42,54 +42,55 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
 }) => {
   return (
     <>
-      <div className="md:hidden bg-white/90 dark:bg-darkcard/90 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-800/50 p-4 flex justify-between items-center sticky top-0 z-[40]">
-        <Logo size={32} />
-        <div className="flex items-center gap-3">
-           <button 
-             onClick={() => setIsDarkMode(!isDarkMode)} 
-             className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-midnight dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors outline-none focus-visible:ring-2 focus-visible:ring-electric active:scale-[0.9] active:brightness-110"
-           >
-             {isDarkMode ? <Sun size={20} className="transition-transform hover:rotate-90 duration-500"/> : <Moon size={20} className="transition-transform hover:-rotate-12"/>}
-           </button>
+      <div className="md:hidden bg-white dark:bg-black border-b border-gray-200 dark:border-white/10 p-4 flex justify-between items-center sticky top-0 z-[40] transition-colors">
+        <Logo size={28} />
+        <div className="flex items-center gap-2">
            <button 
              onClick={onOpenNotifications} 
-             className={`p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-midnight dark:text-white relative hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all outline-none focus-visible:ring-2 focus-visible:ring-electric active:scale-[0.9] ${bellShake ? 'animate-[wiggle_0.5s_ease-in-out]' : ''}`}
+             className={`p-2 flex items-center justify-center text-midnight dark:text-white relative hover:bg-gray-100 dark:hover:bg-zinc-800 transition-all rounded-full ${bellShake ? 'animate-pulse' : ''}`}
            >
              <Bell size={20} />
-             {notificationCount > 0 && <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-turfgreen rounded-full ring-2 ring-white dark:ring-darkcard animate-ping"></span>}
-             {notificationCount > 0 && <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-turfgreen rounded-full ring-2 ring-white dark:ring-darkcard"></span>}
+             {notificationCount > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 dark:bg-volt rounded-full"></span>}
            </button>
            <button 
              onClick={toggleMenu} 
-             className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-midnight dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors outline-none focus-visible:ring-2 focus-visible:ring-electric active:scale-[0.9]"
+             className="p-2 flex items-center justify-center text-midnight dark:text-white hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
            >
-             {isMenuOpen ? <X /> : <Menu />}
+             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
            </button>
         </div>
       </div>
 
       {isMenuOpen && (
-        <div className="md:hidden fixed inset-0 bg-white/95 dark:bg-darkbg/95 backdrop-blur-xl z-[45] pt-24 px-6 animate-scale-in">
-           <nav className="space-y-3">
+        <div className="md:hidden fixed inset-0 bg-white dark:bg-black z-[45] pt-24 px-0 animate-fade-in-up flex flex-col">
+           <nav className="space-y-1 flex-1">
             <NavItem id="discover" icon={MapPin} label="Discover" activeTab={activeTab} setActiveTab={setActiveTab} onClick={toggleMenu} />
-            <NavItem id="matches" icon={Calendar} label="My Matches" activeTab={activeTab} setActiveTab={setActiveTab} onClick={toggleMenu} />
+            <NavItem id="matches" icon={Calendar} label="Matches" activeTab={activeTab} setActiveTab={setActiveTab} onClick={toggleMenu} />
             <NavItem id="scoreboard" icon={Gamepad2} label="Scoreboard" activeTab={activeTab} setActiveTab={setActiveTab} onClick={toggleMenu} />
             <NavItem id="merch" icon={ShoppingBag} label="Store" activeTab={activeTab} setActiveTab={setActiveTab} onClick={toggleMenu} />
-            <NavItem id="social" icon={User} label="Social & Profile" activeTab={activeTab} setActiveTab={setActiveTab} onClick={toggleMenu} />
-            <NavItem id="leaderboard" icon={Trophy} label="Leaderboard" activeTab={activeTab} setActiveTab={setActiveTab} onClick={toggleMenu} />
+            <NavItem id="social" icon={User} label="Profile" activeTab={activeTab} setActiveTab={setActiveTab} onClick={toggleMenu} />
+            <NavItem id="leaderboard" icon={Trophy} label="Rankings" activeTab={activeTab} setActiveTab={setActiveTab} onClick={toggleMenu} />
             {user?.user_type === UserType.OWNER && (
                <NavItem id="dashboard" icon={Briefcase} label="Owner Dashboard" activeTab={activeTab} setActiveTab={setActiveTab} onClick={toggleMenu} />
             )}
-            <div className="pt-8 mt-4 border-t border-gray-100 dark:border-gray-800">
+          </nav>
+          
+          <div className="p-6 border-t border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-zinc-900 flex justify-between items-center">
+               <button 
+                 onClick={() => setIsDarkMode(!isDarkMode)}
+                 className="flex items-center gap-2 text-sm font-bold text-midnight dark:text-white uppercase tracking-wider bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 px-4 py-3 rounded-lg shadow-sm"
+               >
+                  {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+                  <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
+               </button>
+
                <button 
                  onClick={onLogout} 
-                 className="flex items-center space-x-2 px-4 py-3 text-red-500 w-full hover:bg-red-50 dark:hover:bg-red-900/10 rounded-2xl transition-colors outline-none focus-visible:ring-2 focus-visible:ring-red-500 active:scale-[0.98]"
+                 className="flex items-center justify-center space-x-2 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-bold uppercase tracking-wider text-sm"
                >
-                  <LogOut size={20} />
-                  <span>Logout</span>
+                  <LogOut size={18} />
                </button>
             </div>
-          </nav>
         </div>
       )}
     </>

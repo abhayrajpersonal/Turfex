@@ -1,17 +1,15 @@
 
 export * from '../types/index';
 
-// Tournament specific types that don't cause cycles can stay or move to their own file.
-// For safety, we keep them here as they are leaf nodes in the dependency graph.
-
+// Tournament specific types
 export interface TournamentMatch {
   id: string;
-  round: number; // 1 = QF, 2 = SF, 3 = Final
+  round: number;
   team1: { name: string; score?: number; logo?: string };
   team2: { name: string; score?: number; logo?: string };
   date: string;
   status: 'SCHEDULED' | 'LIVE' | 'COMPLETED';
-  winner?: string; // Team Name
+  winner?: string;
 }
 
 export interface TournamentBracketData {
@@ -29,7 +27,7 @@ export interface Coach {
   rating: number;
   reviews_count: number;
   avatar_url: string;
-  specialization: string; // e.g., "Batting", "Goalkeeping"
+  specialization: string;
   is_verified: boolean;
 }
 
@@ -46,3 +44,29 @@ export interface RentalItem {
   description: string;
   available: boolean;
 }
+
+// New Types
+export interface InventoryItem {
+  id: string;
+  name: string;
+  stock: number;
+  price: number;
+  category: 'Equipment' | 'Refreshment' | 'Merch';
+  last_updated: string;
+}
+
+export interface Bid {
+  id: string;
+  booking_id: string;
+  user_id: string;
+  amount: number;
+  timestamp: string;
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED';
+}
+
+export interface CorporateDetails {
+  company_name: string;
+  gst_number: string;
+}
+
+export type Language = 'en' | 'hi' | 'mr' | 'kn';

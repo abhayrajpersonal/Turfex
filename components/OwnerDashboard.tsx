@@ -1,12 +1,14 @@
 
 import React, { useMemo, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { QrCode, Calendar } from 'lucide-react';
-import { Booking } from '../lib/types';
+import { QrCode, Calendar, Lock } from 'lucide-react';
+import { Booking, UserType } from '../lib/types';
 import { formatDate } from '../lib/utils';
 import StatsOverview from '../features/dashboard/components/StatsOverview';
 import SlotScheduler from '../features/dashboard/components/SlotScheduler';
 import SlotManagerModal from '../features/dashboard/components/SlotManagerModal';
+import InventoryManager from '../features/dashboard/components/InventoryManager'; // New Import
+import { useAuth } from '../context/AuthContext';
 
 interface OwnerDashboardProps {
   bookings: Booking[];
@@ -14,9 +16,13 @@ interface OwnerDashboardProps {
 }
 
 const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ bookings, onAddOfflineBooking }) => {
+  const { user } = useAuth();
   const [schedulerDate, setSchedulerDate] = useState(new Date());
   const [selectedSlot, setSelectedSlot] = useState<{date: Date, time: string} | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+
+  // Check if current user is a manager
+  const isManager = user?.user_type === UserType.MANAGER;
 
   // Calculate dynamic stats
   const stats = useMemo(() => {
@@ -97,7 +103,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ bookings, onAddOfflineB
       {/* Header Actions */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-           <h2 className="text-3xl font-display font-black text-midnight dark:text-white">Owner Dashboard</h2>
+           <h2 className="text-3xl font-display font-black text-midnight dark:text-white">{isManager ? 'Manager Dashboard' : 'Owner Dashboard'}</h2>
            <p className="text-gray-500 dark:text-gray-400 font-medium">Manage bookings, block slots, and track revenue.</p>
         </div>
         <div className="flex gap-3">
@@ -135,8 +141,15 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ bookings, onAddOfflineB
           </div>
       )}
 
-      {/* Stats Overview */}
-      <StatsOverview stats={stats} />
+      {/* Stats Overview - HIDDEN FOR MANAGERS */}
+      {!isManager ? (
+          <StatsOverview stats={stats} />
+      ) : (
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800 text-blue-700 dark:text-blue-300 flex items-center gap-3">
+              <Lock size={20} />
+              <span className="font-bold text-sm">Financial Data is restricted to Owners.</span>
+          </div>
+      )}
 
       {/* Scheduler */}
       <SlotScheduler 
@@ -148,42 +161,47 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ bookings, onAddOfflineB
         onSlotClick={handleSlotClick}
       />
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-darkcard p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-          <h3 className="text-lg font-bold text-midnight dark:text-white mb-6">Revenue Trend</h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats.chartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#9CA3AF'}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#9CA3AF'}} tickFormatter={(value) => `₹${value}`} />
-                <Tooltip 
-                  contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', backgroundColor: '#1E1E1E', color: '#fff'}}
-                  cursor={{fill: '#F3F4F6'}}
-                />
-                <Bar dataKey="revenue" fill="#007BFF" radius={[4, 4, 0, 0]} barSize={24} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+      {/* Inventory Manager - New Section */}
+      <InventoryManager />
+
+      {/* Charts Section - HIDDEN FOR MANAGERS */}
+      {!isManager && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white dark:bg-darkcard p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <h3 className="text-lg font-bold text-midnight dark:text-white mb-6">Revenue Trend</h3>
+            <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats.chartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#9CA3AF'}} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#9CA3AF'}} tickFormatter={(value) => `₹${value}`} />
+                    <Tooltip 
+                    contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', backgroundColor: '#1E1E1E', color: '#fff'}}
+                    cursor={{fill: '#F3F4F6'}}
+                    />
+                    <Bar dataKey="revenue" fill="#007BFF" radius={[4, 4, 0, 0]} barSize={24} />
+                </BarChart>
+                </ResponsiveContainer>
+            </div>
+            </div>
+            <div className="bg-white dark:bg-darkcard p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <h3 className="text-lg font-bold text-midnight dark:text-white mb-6">Booking Density</h3>
+            <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={stats.chartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#9CA3AF'}} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#9CA3AF'}} />
+                    <Tooltip 
+                    contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', backgroundColor: '#1E1E1E', color: '#fff'}}
+                    />
+                    <Line type="monotone" dataKey="bookings" stroke="#32CD32" strokeWidth={3} dot={{r: 4, fill: '#32CD32', strokeWidth: 2, stroke: '#fff'}} activeDot={{r: 6}} />
+                </LineChart>
+                </ResponsiveContainer>
+            </div>
+            </div>
         </div>
-        <div className="bg-white dark:bg-darkcard p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-          <h3 className="text-lg font-bold text-midnight dark:text-white mb-6">Booking Density</h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={stats.chartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#9CA3AF'}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#9CA3AF'}} />
-                <Tooltip 
-                  contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', backgroundColor: '#1E1E1E', color: '#fff'}}
-                />
-                <Line type="monotone" dataKey="bookings" stroke="#32CD32" strokeWidth={3} dot={{r: 4, fill: '#32CD32', strokeWidth: 2, stroke: '#fff'}} activeDot={{r: 6}} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
+      )}
 
        {/* Slot Management Modal */}
        {selectedSlot && (

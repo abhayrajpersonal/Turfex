@@ -20,6 +20,7 @@ import MerchScreen from './features/merch/MerchScreen';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { UIProvider, useUI } from './context/UIContext';
 import { DataProvider, useData } from './context/DataContext';
+import { LanguageProvider } from './context/LanguageContext';
 import { MOCK_CHATS } from './lib/mockData';
 import { UserType } from './lib/types';
 
@@ -55,7 +56,7 @@ const TurfexApp = () => {
       case 'social': return <SocialScreen />;
       case 'leaderboard': return <LeaderboardScreen />;
       case 'dashboard': 
-        return user.user_type === UserType.OWNER ? <DashboardScreen /> : <DiscoverScreen />;
+        return (user.user_type === UserType.OWNER || user.user_type === UserType.MANAGER) ? <DashboardScreen /> : <DiscoverScreen />;
       default: return <DiscoverScreen />;
     }
   };
@@ -107,7 +108,9 @@ function App() {
     <AuthProvider>
       <DataProvider>
         <UIProvider>
-           <TurfexApp /> 
+          <LanguageProvider>
+             <TurfexApp /> 
+          </LanguageProvider>
         </UIProvider>
       </DataProvider>
     </AuthProvider>

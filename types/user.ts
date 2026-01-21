@@ -3,7 +3,8 @@ import { Sport } from './sport';
 
 export enum UserType {
   PLAYER = 'PLAYER',
-  OWNER = 'OWNER'
+  OWNER = 'OWNER',
+  MANAGER = 'MANAGER' // Added Manager Role
 }
 
 export enum UserTier {
@@ -33,11 +34,11 @@ export interface SkillEndorsement {
 }
 
 export interface CredibilityScore {
-  total: number; // 0-100
+  total: number;
   breakdown: {
-    reliability: number; // based on attendance
-    skill: number; // based on endorsements
-    fair_play: number; // based on peer reviews
+    reliability: number;
+    skill: number;
+    fair_play: number;
   };
   endorsements: SkillEndorsement[];
 }
@@ -60,6 +61,7 @@ export interface UserProfile {
   referral_code: string;
   stats: PlayerStats;
   credibility?: CredibilityScore;
+  last_spin_date?: string; // For Daily Spin
 }
 
 export interface WalletTransaction {

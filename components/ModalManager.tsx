@@ -5,7 +5,7 @@ import { useUI } from '../context/UIContext';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { MOCK_WALLET_TRANSACTIONS, MOCK_SEARCHABLE_USERS, MOCK_BRACKET } from '../lib/mockData';
-import { Booking, Sport, Team, Tournament } from '../lib/types';
+import { Booking, Sport, Team, Tournament, CorporateDetails } from '../lib/types';
 import Confetti from './common/Confetti';
 
 // Lazy Load Modals
@@ -25,6 +25,10 @@ const ProductDetailsModal = React.lazy(() => import('./merch/ProductDetailsModal
 const CartModal = React.lazy(() => import('./merch/CartModal'));
 const TournamentRegistrationModal = React.lazy(() => import('./tournament/TournamentRegistrationModal'));
 const CoachBookingModal = React.lazy(() => import('./CoachBookingModal'));
+const DailySpinModal = React.lazy(() => import('./common/DailySpinModal'));
+const GalleryModal = React.lazy(() => import('./GalleryModal'));
+const SupportModal = React.lazy(() => import('./SupportModal'));
+const EmergencyModal = React.lazy(() => import('./EmergencyModal'));
 
 const ModalLoader = () => (
   <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/10 backdrop-blur-sm">
@@ -35,11 +39,11 @@ const ModalLoader = () => (
 const ModalManager: React.FC = () => {
   const { activeModal, setActiveModal, modalData, showToast, triggerConfetti, showConfetti } = useUI();
   const { user, updateProfile, completeKyc, upgradeTier, updateWallet } = useAuth();
-  const { bookings, addBooking, addNotification, createTeam, updateMatch, teams } = useData();
+  const { bookings, addBooking, addNotification, createTeam, updateMatch, teams, updateTournament, placeBid } = useData();
 
   const handleClose = () => setActiveModal(null);
 
-  const confirmBooking = (date: string, time: string, sport: Sport, addOns: string[], equipment: string[], price: number, splitWith: string[]) => {
+  const confirmBooking = (date: string, time: string, sport: Sport, addOns: string[], equipment: string[], price: number, splitWith: string[], paymentMode: any, corporateDetails?: CorporateDetails) => {
     if (!user || !modalData?.turf) return;
     
     const newBooking: Booking = {
@@ -52,18 +56,18 @@ const ModalManager: React.FC = () => {
       price: price, 
       status: 'CONFIRMED',
       turf: modalData.turf,
-      payment_mode: splitWith.length > 0 ? 'SPLIT' : 'FULL',
+      payment_mode: paymentMode,
       split_with: splitWith,
       is_recurring: false,
       rental_items: equipment,
       // @ts-ignore
-      add_ons: addOns
+      add_ons: addOns,
+      corporate_details: corporateDetails
     };
 
     addBooking(newBooking);
     updateWallet(-price);
     
-    // Notify current user
     addNotification({
        id: `n-${Date.now()}`,
        user_id: user.id,
@@ -102,9 +106,22 @@ const ModalManager: React.FC = () => {
      triggerConfetti();
   };
 
-  const handleWaitlist = () => {
+  const handleWaitlist = (date: string, time: string, sport: Sport, bidAmount?: number) => {
+      if (bidAmount && user && modalData?.turf) {
+          // Handle Bid
+          placeBid({
+              id: `bid-${Date.now()}`,
+              booking_id: `${date}-${time}-${modalData.turf.id}`,
+              user_id: user.id,
+              amount: bidAmount,
+              timestamp: new Date().toISOString(),
+              status: 'PENDING'
+          });
+          showToast(`Bid of ₹${bidAmount} placed! We will notify you if you win.`, "success");
+      } else {
+          showToast(`Added to Waitlist!`, 'success');
+      }
       handleClose();
-      showToast(`Added to Waitlist!`, 'success');
   };
 
   const handleShareMatch = () => {
@@ -142,6 +159,11 @@ const ModalManager: React.FC = () => {
       // Simulate Payment
       updateWallet(-tournament.entry_fee);
       
+      // Update tournament data
+      updateTournament(tournament.id, {
+          registered_teams: tournament.registered_teams + 1
+      });
+      
       handleClose();
       showToast(`Registered ${team?.name} for ${tournament.name}!`, 'success');
       triggerConfetti();
@@ -157,8 +179,30 @@ const ModalManager: React.FC = () => {
   };
 
   const handleCoachBooking = (date: string, time: string) => {
+      if (!user || !modalData) return;
+      
+      // Create a Coach Booking
+      const coachBooking: Booking = {
+          id: `c-${Date.now()}`,
+          turf_id: 'coach_session',
+          user_id: user.id,
+          sport: modalData.sport,
+          start_time: `${date}T${time}`,
+          end_time: `${date}T${time}`,
+          price: modalData.rate_per_session,
+          status: 'CONFIRMED',
+          payment_mode: 'FULL',
+          turf: { name: `Coach ${modalData.name}`, location: 'TBD' } as any, // Partial turf object
+          is_recurring: false,
+          coach_id: modalData.id,
+          add_ons: ['COACH']
+      };
+
+      addBooking(coachBooking);
+      updateWallet(-modalData.rate_per_session);
+
       handleClose();
-      showToast(`Session with ${modalData?.name} confirmed for ${date} at ${time}!`, 'success');
+      showToast(`Session with ${modalData.name} confirmed for ${date} at ${time}!`, 'success');
       triggerConfetti();
   };
 
@@ -240,6 +284,18 @@ const ModalManager: React.FC = () => {
             onClose={handleClose}
             onConfirm={handleCoachBooking}
         />
+      )}
+      {activeModal === 'daily_spin' && (
+        <DailySpinModal onClose={handleClose} />
+      )}
+      {activeModal === 'gallery' && modalData && (
+        <GalleryModal images={modalData} onClose={handleClose} />
+      )}
+      {activeModal === 'support' && (
+        <SupportModal onClose={handleClose} />
+      )}
+      {activeModal === 'emergency' && (
+        <EmergencyModal onClose={handleClose} />
       )}
     </Suspense>
   );

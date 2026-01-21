@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, ReactNode, useState, useEffect, useRef } from 'react';
-import { Booking, OpenMatch, Notification, ActivityLog, Turf, Sport, Team, CartItem } from '../lib/types';
-import { MOCK_OPEN_MATCHES, MOCK_NOTIFICATIONS, MOCK_ACTIVITIES, MOCK_TEAMS } from '../lib/mockData';
+import { Booking, OpenMatch, Notification, ActivityLog, Turf, Sport, Team, CartItem, Tournament, InventoryItem, Bid } from '../lib/types';
+import { MOCK_OPEN_MATCHES, MOCK_NOTIFICATIONS, MOCK_ACTIVITIES, MOCK_TEAMS, MOCK_TOURNAMENTS } from '../lib/mockData';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useAuth } from './AuthContext';
 import { sendBrowserNotification } from '../lib/utils';
@@ -13,9 +13,13 @@ interface DataContextType {
   activities: ActivityLog[];
   teams: Team[];
   cart: CartItem[];
+  tournaments: Tournament[];
+  inventory: InventoryItem[];
+  bids: Bid[];
   addBooking: (booking: Booking) => void;
   cancelBooking: (bookingId: string) => void;
   joinMatch: (matchId: string) => void;
+  addMatch: (match: OpenMatch) => void; // Added for Scoreboard
   updateMatch: (matchId: string, updates: Partial<OpenMatch>) => void;
   addNotification: (notification: Notification) => void;
   clearNotifications: () => void;
@@ -24,6 +28,9 @@ interface DataContextType {
   removeFromCart: (cartItemId: string) => void;
   updateCartQuantity: (cartItemId: string, delta: number) => void;
   clearCart: () => void;
+  updateTournament: (id: string, updates: Partial<Tournament>) => void;
+  updateInventory: (items: InventoryItem[]) => void;
+  placeBid: (bid: Bid) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -36,6 +43,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [activities, setActivities] = useState<ActivityLog[]>(MOCK_ACTIVITIES);
   const [teams, setTeams] = useLocalStorage<Team[]>('turfex_teams', MOCK_TEAMS);
   const [cart, setCart] = useLocalStorage<CartItem[]>('turfex_cart', []);
+  const [tournaments, setTournaments] = useLocalStorage<Tournament[]>('turfex_tournaments', MOCK_TOURNAMENTS);
+  const [inventory, setInventory] = useLocalStorage<InventoryItem[]>('turfex_inventory', []);
+  const [bids, setBids] = useLocalStorage<Bid[]>('turfex_bids', []);
 
   // Refs for polling interval to access latest state
   const bookingsRef = useRef(bookings);
@@ -55,7 +65,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         const now = new Date();
         const upcomingThreshold = 60 * 60 * 1000; // 1 hour
-        // We notify if start time is within 1 hour and has not started yet (or started very recently)
         
         const notify = (id: string, startStr: string, title: string, body: string) => {
             if (notifiedEventsRef.current.has(id)) return;
@@ -88,14 +97,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
         };
 
-        // Check Bookings
         bookingsRef.current.forEach(b => {
             if (b.user_id === currentUser.id && b.status === 'CONFIRMED') {
-                notify(b.id, b.start_time, 'Booking Reminder', `${b.sport} at ${b.turf?.name}`);
+                notify(b.id, b.start_time, 'Booking Reminder', `${b.sport} at ${b.turf?.name || 'Venue'}`);
             }
         });
 
-        // Check Open Matches
         matchesRef.current.forEach(m => {
             if (m.joined_players.includes(currentUser.id) && m.status !== 'COMPLETED') {
                 notify(m.id, m.start_time, 'Match Reminder', `${m.sport} Match`);
@@ -103,11 +110,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
     };
 
-    const intervalId = setInterval(checkUpcomingEvents, 60000); // Check every minute
-    checkUpcomingEvents(); // Initial check
+    const intervalId = setInterval(checkUpcomingEvents, 60000); 
+    checkUpcomingEvents(); 
 
     return () => clearInterval(intervalId);
-  }, []); // Empty dependency array, relies on refs
+  }, []); 
 
   const addBooking = (booking: Booking) => {
     setBookings(prev => [booking, ...prev]);
@@ -127,6 +134,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }));
   };
 
+  const addMatch = (match: OpenMatch) => {
+      setOpenMatches(prev => [match, ...prev]);
+  };
+
   const updateMatch = (matchId: string, updates: Partial<OpenMatch>) => {
     setOpenMatches(prev => prev.map(m => m.id === matchId ? { ...m, ...updates } : m));
   };
@@ -141,6 +152,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const createTeam = (team: Team) => {
     setTeams(prev => [team, ...prev]);
+  };
+
+  const updateTournament = (id: string, updates: Partial<Tournament>) => {
+      setTournaments(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+  };
+
+  const updateInventory = (items: InventoryItem[]) => {
+      setInventory(items);
+  };
+
+  const placeBid = (bid: Bid) => {
+      setBids(prev => [...prev, bid]);
   };
 
   // Cart Functions
@@ -180,9 +203,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       activities, 
       teams,
       cart,
+      tournaments,
+      inventory,
+      bids,
       addBooking, 
       cancelBooking, 
-      joinMatch, 
+      joinMatch,
+      addMatch,
       updateMatch,
       addNotification,
       clearNotifications,
@@ -190,7 +217,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       addToCart,
       removeFromCart,
       updateCartQuantity,
-      clearCart
+      clearCart,
+      updateTournament,
+      updateInventory,
+      placeBid
     }}>
       {children}
     </DataContext.Provider>

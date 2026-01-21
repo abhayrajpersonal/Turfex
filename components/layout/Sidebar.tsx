@@ -1,8 +1,10 @@
 
 import React from 'react';
-import { User, Calendar, Trophy, MapPin, Briefcase, Moon, Sun, Crown, Bell, Gamepad2, ShoppingBag, LogOut } from 'lucide-react';
+import { User, Calendar, Trophy, MapPin, Briefcase, Moon, Sun, Crown, Bell, Gamepad2, ShoppingBag, LogOut, HelpCircle, Phone, Globe, Gift } from 'lucide-react';
 import { UserProfile, UserType, UserTier } from '../../lib/types';
 import Logo from '../common/Logo';
+import { useUI } from '../../context/UIContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface SidebarProps {
   user: UserProfile | null;
@@ -39,6 +41,16 @@ const Sidebar: React.FC<SidebarProps> = ({
   user, activeTab, setActiveTab, onLogout, onUpgrade, 
   notificationCount, onOpenNotifications, isDarkMode, setIsDarkMode, bellShake 
 }) => {
+  const { setActiveModal } = useUI();
+  const { language, setLanguage, t } = useLanguage();
+
+  const toggleLanguage = () => {
+      const langs = ['en', 'hi', 'mr', 'kn'];
+      const currentIdx = langs.indexOf(language);
+      const nextLang = langs[(currentIdx + 1) % langs.length];
+      setLanguage(nextLang as any);
+  };
+
   return (
     <aside className="hidden md:flex flex-col w-72 bg-white dark:bg-darkcard border-r border-gray-200 dark:border-gray-800 h-full z-30 overflow-y-auto">
         <div className="p-8">
@@ -47,16 +59,26 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
         
         <nav className="flex-1 px-6 space-y-2">
-          <NavItem id="discover" icon={MapPin} label="Discover" activeTab={activeTab} setActiveTab={setActiveTab} />
-          <NavItem id="matches" icon={Calendar} label="My Matches" activeTab={activeTab} setActiveTab={setActiveTab} />
-          <NavItem id="scoreboard" icon={Gamepad2} label="Scoreboard" activeTab={activeTab} setActiveTab={setActiveTab} />
-          <NavItem id="merch" icon={ShoppingBag} label="Store" activeTab={activeTab} setActiveTab={setActiveTab} />
-          <NavItem id="social" icon={User} label="Social & Profile" activeTab={activeTab} setActiveTab={setActiveTab} />
-          <NavItem id="leaderboard" icon={Trophy} label="Leaderboard" activeTab={activeTab} setActiveTab={setActiveTab} />
+          <NavItem id="discover" icon={MapPin} label={t('discover')} activeTab={activeTab} setActiveTab={setActiveTab} />
+          <NavItem id="matches" icon={Calendar} label={t('matches')} activeTab={activeTab} setActiveTab={setActiveTab} />
+          <NavItem id="scoreboard" icon={Gamepad2} label={t('scoreboard')} activeTab={activeTab} setActiveTab={setActiveTab} />
+          <NavItem id="merch" icon={ShoppingBag} label={t('store')} activeTab={activeTab} setActiveTab={setActiveTab} />
+          <NavItem id="social" icon={User} label={t('social')} activeTab={activeTab} setActiveTab={setActiveTab} />
+          <NavItem id="leaderboard" icon={Trophy} label={t('leaderboard')} activeTab={activeTab} setActiveTab={setActiveTab} />
           {user?.user_type === UserType.OWNER && (
-              <NavItem id="dashboard" icon={Briefcase} label="Owner Dashboard" activeTab={activeTab} setActiveTab={setActiveTab} />
+              <NavItem id="dashboard" icon={Briefcase} label={t('dashboard')} activeTab={activeTab} setActiveTab={setActiveTab} />
           )}
         </nav>
+
+        {/* Feature: Daily Spin */}
+        <div className="px-6 mb-2">
+            <button 
+                onClick={() => setActiveModal('daily_spin')}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-2xl shadow-md hover:scale-[1.02] active:scale-95 transition-all text-sm font-bold"
+            >
+                <Gift size={18} /> Daily Spin
+            </button>
+        </div>
 
         {/* Upgrade Button */}
         {user?.user_type === UserType.PLAYER && user?.tier !== UserTier.GOLD && (
@@ -78,24 +100,35 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         <div className="p-6 border-t border-gray-100 dark:border-gray-800">
            <div className="flex items-center justify-between mb-6">
-             <div className="flex items-center gap-3 bg-offwhite dark:bg-gray-800/50 p-1.5 rounded-2xl border border-gray-100 dark:border-gray-700">
+             <div className="flex items-center gap-2 bg-offwhite dark:bg-gray-800/50 p-1.5 rounded-2xl border border-gray-100 dark:border-gray-700">
                  <button 
                    onClick={() => setIsDarkMode(!isDarkMode)} 
-                   aria-label={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
-                   className="p-2 bg-white dark:bg-gray-700 rounded-xl shadow-sm text-courtgray dark:text-gray-200 hover:text-electric transition-colors outline-none focus-visible:ring-2 focus-visible:ring-electric active:scale-[0.9]"
+                   className="p-2 bg-white dark:bg-gray-700 rounded-xl shadow-sm text-courtgray dark:text-gray-200 hover:text-electric transition-colors"
                  >
-                   {isDarkMode ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
+                   {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
                  </button>
                  <button 
                    onClick={onOpenNotifications} 
-                   aria-label={`Notifications ${notificationCount > 0 ? `(${notificationCount} new)` : ''}`}
-                   className="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-xl text-courtgray dark:text-gray-300 relative transition-colors outline-none focus-visible:ring-2 focus-visible:ring-electric active:scale-[0.9]"
+                   className="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-xl text-courtgray dark:text-gray-300 relative transition-colors"
                  >
-                    <Bell size={16} aria-hidden="true" className={bellShake ? 'animate-[wiggle_0.5s_ease-in-out]' : ''} />
+                    <Bell size={16} className={bellShake ? 'animate-[wiggle_0.5s_ease-in-out]' : ''} />
                     {notificationCount > 0 && <span className="absolute top-1.5 right-2 w-2 h-2 bg-turfgreen rounded-full border border-white dark:border-darkbg animate-pulse"></span>}
                  </button>
+                 <button
+                    onClick={toggleLanguage}
+                    className="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-xl text-courtgray dark:text-gray-300 relative transition-colors font-bold text-xs"
+                 >
+                     {language.toUpperCase()}
+                 </button>
+             </div>
+             
+             {/* Help & Emergency */}
+             <div className="flex gap-2">
+                 <button onClick={() => setActiveModal('support')} className="p-2 text-gray-400 hover:text-blue-500"><HelpCircle size={18}/></button>
+                 <button onClick={() => setActiveModal('emergency')} className="p-2 text-gray-400 hover:text-red-500"><Phone size={18}/></button>
              </div>
            </div>
+           
           <div className="flex items-center p-3 mb-4 bg-offwhite dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-2xl hover:border-blue-200 dark:hover:border-blue-800 transition-colors cursor-pointer group" tabIndex={0} role="button" aria-label="View Profile">
              <div className="relative">
                 <img src={user?.avatar_url || "https://picsum.photos/40"} alt="" className="w-10 h-10 rounded-full mr-3 object-cover group-hover:scale-110 transition-transform" />

@@ -6,7 +6,7 @@ import { useUI } from '../../context/UIContext';
 import { useAuth } from '../../context/AuthContext';
 import { Sport, FriendActivity, OpenMatch } from '../../lib/types';
 import { SPORTS_ICONS } from '../../lib/constants';
-import { MOCK_TURFS, MOCK_TOURNAMENTS, MOCK_FRIENDS_ACTIVITY, MOCK_COACHES } from '../../lib/mockData';
+import { MOCK_TURFS, MOCK_FRIENDS_ACTIVITY, MOCK_COACHES } from '../../lib/mockData';
 import MapComponent from '../../components/common/MapComponent';
 import { debounce } from '../../lib/utils';
 
@@ -19,7 +19,7 @@ import TournamentList from './components/TournamentList';
 import CoachList from './components/CoachList';
 
 const DiscoverScreen: React.FC = () => {
-  const { openMatches, joinMatch } = useData();
+  const { openMatches, joinMatch, tournaments } = useData(); // Use tournaments from context
   const { setActiveModal, showToast, setActiveTab } = useUI();
   const { user } = useAuth();
   
@@ -221,7 +221,7 @@ const DiscoverScreen: React.FC = () => {
       if (discoverTab === 'tournaments') {
           return (
             <TournamentList 
-                tournaments={MOCK_TOURNAMENTS}
+                tournaments={tournaments} // Use context tournaments
                 onBracketClick={() => setActiveModal('bracket')}
                 onRegisterClick={handleTournamentRegister}
             />

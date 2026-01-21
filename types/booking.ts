@@ -30,18 +30,23 @@ export interface Turf {
 
 export interface Booking {
   id: string;
-  turf_id: string;
+  turf_id: string; // Can be 'coach_session' or 'offline'
   user_id: string;
   sport: Sport;
   start_time: string;
   end_time: string;
   price: number;
   status: 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | 'PENDING_PAYMENT' | 'MAINTENANCE';
-  turf?: Turf; 
-  payment_mode: 'FULL' | 'SPLIT' | 'WALLET' | 'OFFLINE' | 'LOSER_PAYS';
+  turf?: Turf | { name: string, location: string }; // Allow partial object for Coach/Offline
+  payment_mode: 'FULL' | 'SPLIT' | 'WALLET' | 'OFFLINE' | 'LOSER_PAYS' | 'CORPORATE';
   split_with?: string[];
   is_recurring: boolean;
   rental_items?: string[];
   add_ons?: ('COACH' | 'REFEREE')[];
   qr_code?: string;
+  corporate_details?: {
+    company_name: string;
+    gst_number: string;
+  };
+  coach_id?: string; // For specific coach bookings
 }

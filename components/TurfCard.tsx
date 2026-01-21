@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
-import { Star, MapPin, CheckCircle, Cloud, Sun, CloudRain, Navigation, Heart } from 'lucide-react';
+import { Star, MapPin, CheckCircle, Cloud, Sun, CloudRain, Navigation, Heart, Image as ImageIcon } from 'lucide-react';
 import { Turf } from '../lib/types';
 import { SPORTS_ICONS } from '../lib/constants';
+import { useUI } from '../context/UIContext';
 
 interface TurfCardProps {
   turf: Turf;
@@ -10,6 +11,7 @@ interface TurfCardProps {
 }
 
 const TurfCard: React.FC<TurfCardProps> = ({ turf, onBook }) => {
+  const { setActiveModal } = useUI();
   const [isFavorite, setIsFavorite] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
 
@@ -18,6 +20,11 @@ const TurfCard: React.FC<TurfCardProps> = ({ turf, onBook }) => {
     setIsFavorite(!isFavorite);
     setIsAnimating(true);
     setTimeout(() => setIsAnimating(false), 400); // Extended for spring effect
+  };
+
+  const openGallery = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setActiveModal('gallery', turf.images);
   };
 
   return (
@@ -66,6 +73,14 @@ const TurfCard: React.FC<TurfCardProps> = ({ turf, onBook }) => {
              <Navigation size={10} className="mr-1 text-sparklime" aria-hidden="true" />
              <span className="font-mono">2.4 km</span>
         </div>
+
+        {/* View Photos Badge */}
+        <button 
+            onClick={openGallery}
+            className="absolute bottom-3 right-3 bg-black/50 backdrop-blur-md px-2 py-1 rounded-lg text-xs font-bold text-white flex items-center hover:bg-black/70 transition-colors border border-white/20"
+        >
+            <ImageIcon size={12} className="mr-1" /> Photos ({turf.images.length})
+        </button>
       </div>
       
       <div className="p-5">

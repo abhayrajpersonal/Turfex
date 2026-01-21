@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Ticket, Tag, X, Users, Check, Skull } from 'lucide-react';
 import { Turf, Sport } from '../../lib/types';
@@ -20,7 +19,7 @@ interface PaymentReceiptProps {
   appliedCoupon: { code: string; discount: number } | null;
   setAppliedCoupon: (val: { code: string; discount: number } | null) => void;
   handleApplyCoupon: () => void;
-  paymentMode: 'FULL' | 'SPLIT' | 'LOSER_PAYS';
+  paymentMode: 'FULL' | 'SPLIT' | 'LOSER_PAYS' | 'CORPORATE';
 }
 
 const PaymentReceipt: React.FC<PaymentReceiptProps> = ({

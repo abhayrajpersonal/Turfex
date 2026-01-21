@@ -9,7 +9,7 @@ import { SPORTS_ICONS } from '../../lib/constants';
 
 const ScoreboardScreen: React.FC = () => {
   const { user } = useAuth();
-  const { openMatches } = useData();
+  const { openMatches, addMatch } = useData();
   const { setActiveModal, showToast } = useUI();
   
   const [view, setView] = useState<'LANDING' | 'CREATE'>('LANDING');
@@ -61,8 +61,9 @@ const ScoreboardScreen: React.FC = () => {
           scoreboard: initialScoreboard
       };
 
-      // We trigger the modal directly with this new match object
-      // Ideally we'd add it to context first, but for UI flow this works
+      // ADD MATCH TO CONTEXT SO IT PERSISTS
+      addMatch(newMatch);
+
       setActiveModal('live_match', newMatch);
       setView('LANDING');
       setTeamA('');

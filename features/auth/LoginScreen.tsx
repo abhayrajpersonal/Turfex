@@ -46,7 +46,7 @@ const LoginScreen: React.FC = () => {
   React.useEffect(() => {
     if (user) {
         showToast("Welcome back!", 'success');
-        if (user.user_type === UserType.OWNER) {
+        if (user.user_type === UserType.OWNER || user.user_type === UserType.MANAGER) {
             setActiveTab('dashboard');
         } else {
             setActiveTab('discover');
@@ -93,7 +93,7 @@ const LoginScreen: React.FC = () => {
                     autoFocus
                   />
                 </div>
-                <p className="text-xs text-courtgray mt-3">Try ending with '9' for Owner demo.</p>
+                <p className="text-xs text-courtgray mt-3">Demo Tips: End with '9' for Owner, '8' for Manager.</p>
               </div>
             ) : (
               <div>

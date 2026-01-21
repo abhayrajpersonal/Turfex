@@ -13,6 +13,7 @@ interface AuthContextType {
   upgradeTier: () => void;
   completeKyc: () => void;
   updateWallet: (amount: number) => void;
+  updateUserFields: (fields: Partial<UserProfile>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,6 +29,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setTimeout(() => {
         if (phone.endsWith('9')) {
           setUser(MOCK_OWNER_USER);
+        } else if (phone.endsWith('8')) {
+          // Mock Manager
+          setUser({
+              ...MOCK_OWNER_USER,
+              id: 'm1',
+              full_name: 'Manager Mike',
+              user_type: UserType.MANAGER
+          });
         } else {
           setUser(MOCK_USER);
         }
@@ -58,8 +67,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (user) setUser({ ...user, wallet_balance: user.wallet_balance + amount });
   };
 
+  const updateUserFields = (fields: Partial<UserProfile>) => {
+      if (user) setUser({ ...user, ...fields });
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, updateProfile, upgradeTier, completeKyc, updateWallet }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, updateProfile, upgradeTier, completeKyc, updateWallet, updateUserFields }}>
       {children}
     </AuthContext.Provider>
   );

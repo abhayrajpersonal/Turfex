@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
-import { X, Repeat, Users, AlertCircle, UserCheck, Flag, Zap, Plus, ArrowRight, ArrowLeft, Check, Loader2, Skull } from 'lucide-react';
-import { Turf, Sport, Booking } from '../lib/types';
+import { X, Repeat, Users, AlertCircle, UserCheck, Flag, Zap, Plus, ArrowRight, ArrowLeft, Check, Loader2, Skull, Building2, Gavel } from 'lucide-react';
+import { Turf, Sport, Booking, CorporateDetails } from '../lib/types';
 import CustomCalendar from './common/CustomCalendar';
 import PaymentReceipt from './booking/PaymentReceipt';
 import { useUI } from '../context/UIContext';
@@ -11,8 +11,8 @@ interface BookingModalProps {
   turf: Turf;
   existingBookings: Booking[];
   onClose: () => void;
-  onConfirm: (date: string, time: string, sport: Sport, addOns: string[], equipment: string[], price: number, splitWith: string[], paymentMode?: string) => void;
-  onWaitlist: (date: string, time: string, sport: Sport) => void;
+  onConfirm: (date: string, time: string, sport: Sport, addOns: string[], equipment: string[], price: number, splitWith: string[], paymentMode?: string, corporateDetails?: CorporateDetails) => void;
+  onWaitlist: (date: string, time: string, sport: Sport, bidAmount?: number) => void;
   initialDate?: string;
 }
 
@@ -27,6 +27,12 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
   const [isRecurring, setIsRecurring] = useState(false);
   const [isSplit, setIsSplit] = useState(false);
   const [isLoserPays, setIsLoserPays] = useState(false);
+  const [isCorporate, setIsCorporate] = useState(false);
+  const [corporateName, setCorporateName] = useState('');
+  const [corporateGST, setCorporateGST] = useState('');
+  
+  const [isBidding, setIsBidding] = useState(false);
+  const [bidAmount, setBidAmount] = useState(0);
   
   // Enhanced Split User State
   const [splitUsers, setSplitUsers] = useState<{ name: string; avatar?: string; isVerified: boolean }[]>([]);
@@ -62,6 +68,15 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
 
   const isSelectedSlotBooked = selectedSlot && bookedSlots.includes(selectedSlot);
 
+  // Auction Logic: Check if slot is > 60 mins away
+  const canBidOnSlot = useMemo(() => {
+      if (!selectedSlot || !isSelectedSlotBooked) return false;
+      const slotTime = new Date(`${date} ${selectedSlot}`);
+      const now = new Date();
+      const diffInMinutes = (slotTime.getTime() - now.getTime()) / 1000 / 60;
+      return diffInMinutes > 60;
+  }, [selectedSlot, isSelectedSlotBooked, date]);
+
   // Dynamic Pricing Logic
   const getSlotPrice = (slotTime: string) => {
       if (!slotTime) return turf.price_per_hour;
@@ -81,10 +96,15 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
       totalCost = Math.max(0, totalCost - appliedCoupon.discount);
   }
 
+  // If bidding, total cost starts at bid amount
+  if (isBidding) {
+      totalCost = bidAmount;
+  }
+
   const perPersonCost = isSplit && splitUsers.length > 0 ? Math.ceil(totalCost / (splitUsers.length + 1)) : totalCost;
   
   // Define paymentMode here to ensure it's available for render
-  const paymentMode = isLoserPays ? 'LOSER_PAYS' : isSplit ? 'SPLIT' : 'FULL';
+  const paymentMode = isCorporate ? 'CORPORATE' : isLoserPays ? 'LOSER_PAYS' : isSplit ? 'SPLIT' : 'FULL';
 
   const handleApplyCoupon = () => {
      if (couponCode.toUpperCase() === 'TURFEX50') {
@@ -102,13 +122,25 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
   const handleConfirm = () => {
     if (selectedSlot) {
       if (isSelectedSlotBooked) {
-        onWaitlist(date, selectedSlot, selectedSport);
+        if (isBidding) {
+            onWaitlist(date, selectedSlot, selectedSport, bidAmount);
+        } else {
+            onWaitlist(date, selectedSlot, selectedSport);
+        }
       } else {
         // Validation for Loser Pays
         if (isLoserPays && splitUsers.length === 0) {
             showToast("Add at least one opponent for Loser Pays mode!", "error");
             return;
         }
+        
+        // Validation for Corporate
+        if (isCorporate && (!corporateName || !corporateGST)) {
+            showToast("Please enter corporate details", "error");
+            return;
+        }
+
+        const corpDetails = isCorporate ? { company_name: corporateName, gst_number: corporateGST } : undefined;
 
         onConfirm(
             date, 
@@ -118,7 +150,8 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
             selectedEquipment, 
             totalCost, 
             (isSplit || isLoserPays) ? splitUsers.map(u => u.name) : [],
-            paymentMode
+            paymentMode,
+            corpDetails
         );
       }
     }
@@ -186,14 +219,21 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
            onSelect={(d) => { setDate(d); setSelectedSlot(null); }} 
            minDate={new Date().toISOString().split('T')[0]} 
         />
-        <button 
-          onClick={() => setIsRecurring(!isRecurring)}
-          aria-pressed={isRecurring}
-          className={`w-full mt-4 py-3 px-4 rounded-xl text-sm font-medium border flex items-center justify-center gap-2 transition-all outline-none focus-visible:ring-2 focus-visible:ring-electric ${isRecurring ? 'bg-electric/10 border-electric text-electric' : 'bg-offwhite dark:bg-gray-800 border-transparent text-gray-600 dark:text-gray-300 hover:bg-gray-100'}`}
-          >
-            <Repeat size={16} aria-hidden="true" />
-            {isRecurring ? 'Recurring Booking (Weekly)' : 'One-time Booking'}
-        </button>
+        <div className="flex gap-2 mt-4">
+            <button 
+                onClick={() => { setIsRecurring(!isRecurring); setIsCorporate(false); }}
+                className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium border flex items-center justify-center gap-2 transition-all outline-none ${isRecurring ? 'bg-electric/10 border-electric text-electric' : 'bg-offwhite dark:bg-gray-800 border-transparent text-gray-600 dark:text-gray-300 hover:bg-gray-100'}`}
+            >
+                <Repeat size={16} /> Recurring
+            </button>
+            {/* Feature: Corporate Booking */}
+            <button 
+                onClick={() => { setIsCorporate(!isCorporate); setIsRecurring(false); }}
+                className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium border flex items-center justify-center gap-2 transition-all outline-none ${isCorporate ? 'bg-indigo-100 dark:bg-indigo-900/30 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'bg-offwhite dark:bg-gray-800 border-transparent text-gray-600 dark:text-gray-300 hover:bg-gray-100'}`}
+            >
+                <Building2 size={16} /> Corporate
+            </button>
+        </div>
       </div>
     </div>
   );
@@ -221,13 +261,17 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
                     key={slot}
                     role="option"
                     aria-selected={selectedSlot === slot}
-                    disabled={isBooked}
-                    onClick={() => setSelectedSlot(slot)}
+                    // Don't disable booked slots if auction logic applies, handled in click
+                    onClick={() => {
+                        setSelectedSlot(slot);
+                        setIsBidding(false); // Reset bidding when changing slot
+                        setBidAmount(slotPrice * 1.5); // Default bid
+                    }}
                     className={`py-3 px-1 rounded-xl text-sm font-medium text-center border transition-all relative overflow-hidden flex flex-col items-center justify-center min-h-[50px] outline-none focus-visible:ring-2 focus-visible:ring-electric active:scale-95 ${
                       selectedSlot === slot
                         ? 'bg-electric text-white border-transparent shadow-lg scale-[1.05] ring-2 ring-blue-300 dark:ring-blue-900'
                         : isBooked 
-                            ? 'bg-gray-100 dark:bg-gray-800 text-courtgray border-transparent cursor-not-allowed opacity-50' 
+                            ? 'bg-gray-100 dark:bg-gray-800 text-courtgray border-transparent' // Not disabled styling, just grayed
                             : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-blue-300'
                     }`}
                   >
@@ -235,19 +279,73 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
                     {isSlotPeak && !isBooked && selectedSlot !== slot && (
                         <span className="absolute top-0.5 right-0.5 text-[8px] text-orange-500"><Zap size={8} className="fill-orange-500" aria-hidden="true"/></span>
                     )}
+                    {isBooked && <span className="text-[8px] font-bold text-red-500">BOOKED</span>}
                   </button>
                 );
               })}
             </div>
           </div>
         ))}
-        {bookedSlots.length > 0 && <p className="text-xs text-orange-500 mt-2 flex items-center gap-1"><AlertCircle size={12}/> Slots marked gray are fully booked.</p>}
+        
+        {/* Auction UI */}
+        {isSelectedSlotBooked && canBidOnSlot && (
+            <div className="bg-orange-50 dark:bg-orange-900/10 p-4 rounded-xl border border-orange-200 dark:border-orange-800 animate-fade-in-up">
+                <div className="flex items-center gap-2 mb-2 text-orange-700 dark:text-orange-400">
+                    <Gavel size={18} />
+                    <span className="font-bold text-sm">Slot Auction Active</span>
+                </div>
+                <p className="text-xs text-orange-600/80 mb-3">This slot is booked, but you can place a higher bid to claim it. Current bookings lock 60 mins before game time.</p>
+                <button 
+                    onClick={() => setIsBidding(true)}
+                    className={`w-full py-2 rounded-lg text-sm font-bold transition-all ${isBidding ? 'bg-orange-500 text-white shadow-md' : 'bg-white text-orange-600 border border-orange-200 hover:bg-orange-100'}`}
+                >
+                    {isBidding ? 'Bidding Enabled' : 'Place Bid to Steal Slot'}
+                </button>
+                
+                {isBidding && (
+                    <div className="mt-3">
+                        <label className="text-xs font-bold text-orange-700">Your Bid (Min ₹{basePrice * 1.5})</label>
+                        <input 
+                            type="number" 
+                            value={bidAmount}
+                            onChange={(e) => setBidAmount(Number(e.target.value))}
+                            className="w-full mt-1 p-2 rounded border border-orange-300 text-midnight font-bold"
+                        />
+                    </div>
+                )}
+            </div>
+        )}
+        
+        {isSelectedSlotBooked && !canBidOnSlot && (
+             <p className="text-xs text-red-500 mt-2 flex items-center gap-1"><AlertCircle size={12}/> Slot locked. Bookings close 1 hour before start.</p>
+        )}
       </div>
     );
   };
 
   const renderStep3 = () => (
     <div className="space-y-6 animate-fade-in-up pb-10">
+      {/* Corporate Details */}
+      {isCorporate && (
+          <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800">
+              <h4 className="text-indigo-700 dark:text-indigo-300 font-bold text-sm mb-2 flex items-center gap-2"><Building2 size={16}/> Corporate Booking</h4>
+              <div className="space-y-2">
+                  <input 
+                    placeholder="Company Name" 
+                    value={corporateName}
+                    onChange={(e) => setCorporateName(e.target.value)}
+                    className="w-full p-2 text-sm rounded border border-indigo-200 bg-white/50" 
+                  />
+                  <input 
+                    placeholder="GST Number" 
+                    value={corporateGST}
+                    onChange={(e) => setCorporateGST(e.target.value)}
+                    className="w-full p-2 text-sm rounded border border-indigo-200 bg-white/50" 
+                  />
+              </div>
+          </div>
+      )}
+
       {/* Add-ons */}
       {(turf.has_coach || turf.has_referee) && (
         <div>
@@ -457,7 +555,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
              {step < 4 ? (
                  <button 
                     onClick={nextStep}
-                    disabled={step === 2 && !selectedSlot}
+                    disabled={(step === 2 && !selectedSlot)}
                     className="w-full bg-midnight dark:bg-white text-white dark:text-midnight font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 outline-none focus-visible:ring-2 focus-visible:ring-electric min-h-[48px]"
                  >
                     Next Step <ArrowRight size={18} aria-hidden="true" />
@@ -465,10 +563,10 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
              ) : (
                  <button 
                     onClick={handleConfirm}
-                    disabled={isLoserPays && splitUsers.length === 0}
-                    className={`w-full text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-xl hover:scale-[1.02] active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-electric min-h-[48px] disabled:opacity-50 disabled:scale-100 ${isSelectedSlotBooked ? 'bg-orange-500 shadow-orange-500/30' : isLoserPays ? 'bg-red-600 shadow-red-600/30' : 'bg-electric shadow-blue-500/30'}`}
+                    disabled={(isLoserPays && splitUsers.length === 0) || (isCorporate && (!corporateName || !corporateGST))}
+                    className={`w-full text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-xl hover:scale-[1.02] active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-electric min-h-[48px] disabled:opacity-50 disabled:scale-100 ${isSelectedSlotBooked && !isBidding ? 'bg-orange-500 shadow-orange-500/30' : isLoserPays ? 'bg-red-600 shadow-red-600/30' : isBidding ? 'bg-orange-600' : 'bg-electric shadow-blue-500/30'}`}
                  >
-                    {isSelectedSlotBooked ? 'Join Waitlist' : isLoserPays ? `Confirm Wager` : `Pay ₹${perPersonCost}`}
+                    {isSelectedSlotBooked ? (isBidding ? `Submit Bid ₹${bidAmount}` : 'Join Waitlist') : isLoserPays ? `Confirm Wager` : `Pay ₹${perPersonCost}`}
                  </button>
              )}
         </div>

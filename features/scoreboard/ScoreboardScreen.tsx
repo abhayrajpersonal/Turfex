@@ -26,6 +26,28 @@ const ScoreboardScreen: React.FC = () => {
           return;
       }
 
+      // Initial Scoreboard State Logic
+      let initialScoreboard: any = {
+          team_a_name: teamA,
+          team_b_name: teamB,
+          last_update: 'Match Started'
+      };
+
+      if (selectedSport === Sport.CRICKET) {
+          initialScoreboard.cricket = {
+              team_a: { runs: 0, wickets: 0, overs: 0, balls: 0, is_batting_first: true },
+              team_b: { runs: 0, wickets: 0, overs: 0, balls: 0, is_batting_first: false }
+          };
+      } else if (selectedSport === Sport.FOOTBALL) {
+          initialScoreboard.football = { team_a: 0, team_b: 0, time_elapsed: 0 };
+      } else if ([Sport.BADMINTON, Sport.PICKLEBALL, Sport.TENNIS].includes(selectedSport)) {
+          initialScoreboard.racquet = {
+              sets: [{ a: 0, b: 0 }],
+              current_set: 0,
+              server: 'A'
+          };
+      }
+
       // In a real app, this would make an API call to create the match
       const newMatch: OpenMatch = {
           id: `live-${Date.now()}`,
@@ -36,16 +58,7 @@ const ScoreboardScreen: React.FC = () => {
           joined_players: [user?.id || ''],
           start_time: new Date().toISOString(),
           status: 'LIVE',
-          scoreboard: {
-              team_a_name: teamA,
-              team_b_name: teamB,
-              cricket: {
-                  team_a: { runs: 0, wickets: 0, overs: 0, balls: 0, is_batting_first: true },
-                  team_b: { runs: 0, wickets: 0, overs: 0, balls: 0, is_batting_first: false }
-              },
-              football: { team_a: 0, team_b: 0, time_elapsed: 0 },
-              last_update: 'Match Started'
-          }
+          scoreboard: initialScoreboard
       };
 
       // We trigger the modal directly with this new match object

@@ -7,6 +7,7 @@ import { useMatchScoring } from '../../hooks/useMatchScoring';
 import ScoreboardDisplay from './ScoreboardDisplay';
 import CricketControls from './controls/CricketControls';
 import FootballControls from './controls/FootballControls';
+import RacquetControls from './controls/RacquetControls';
 import MatchSummary from './MatchSummary';
 
 interface LiveMatchModalProps {
@@ -22,7 +23,7 @@ const LiveMatchModal: React.FC<LiveMatchModalProps> = ({ match, onClose, onShare
   const [status, setStatus] = useState(match.status);
   
   // Use the new hook for scoring logic
-  const { scoreboard, updateCricketScore, updateFootballScore } = useMatchScoring(match);
+  const { scoreboard, updateCricketScore, updateFootballScore, updateRacquetScore, toggleServer } = useMatchScoring(match);
 
   const handleFinishMatch = () => {
       if(!onFinish) return;
@@ -33,6 +34,15 @@ const LiveMatchModal: React.FC<LiveMatchModalProps> = ({ match, onClose, onShare
       } else if (match.sport === Sport.FOOTBALL && scoreboard?.football) {
           winner = scoreboard.football.team_a > scoreboard.football.team_b ? scoreboard.team_a_name : 
                    scoreboard.football.team_b > scoreboard.football.team_a ? scoreboard.team_b_name : 'Draw';
+      } else if (scoreboard?.racquet) {
+          // Count sets won
+          let setsA = 0;
+          let setsB = 0;
+          scoreboard.racquet.sets.forEach((s: any) => {
+              if (s.a > s.b) setsA++;
+              else if (s.b > s.a) setsB++;
+          });
+          winner = setsA > setsB ? scoreboard.team_a_name : setsB > setsA ? scoreboard.team_b_name : 'Draw';
       }
 
       setStatus('COMPLETED');
@@ -55,9 +65,12 @@ const LiveMatchModal: React.FC<LiveMatchModalProps> = ({ match, onClose, onShare
       );
   }
 
+  const isRacquetSport = [Sport.BADMINTON, Sport.TENNIS, Sport.PICKLEBALL].includes(match.sport);
+
   return (
     <div className="fixed inset-0 bg-black/80 z-[90] flex justify-center items-center backdrop-blur-sm animate-fade-in-up">
-        <div className="w-full h-full md:h-[85vh] md:w-[600px] md:rounded-3xl bg-white dark:bg-darkcard flex flex-col overflow-hidden shadow-2xl relative">
+        {/* Added pt-safe-top to avoid notch on mobile */}
+        <div className="w-full h-full md:h-[85vh] md:w-[600px] md:rounded-3xl bg-white dark:bg-darkcard flex flex-col overflow-hidden shadow-2xl relative pt-safe-top md:pt-0">
             
             {/* Header */}
             <div className="bg-gradient-to-b from-gray-900 to-black p-4 text-white flex justify-between items-center z-10 shrink-0">
@@ -88,9 +101,20 @@ const LiveMatchModal: React.FC<LiveMatchModalProps> = ({ match, onClose, onShare
                         <p className="text-xs text-gray-400 mb-6">You are the host. Updates here reflect for all spectators.</p>
                         
                         {match.sport === Sport.CRICKET && <CricketControls onUpdateScore={updateCricketScore} />}
+                        
                         {match.sport === Sport.FOOTBALL && <FootballControls teamA={scoreboard?.team_a_name || 'A'} teamB={scoreboard?.team_b_name || 'B'} onGoal={updateFootballScore} />}
                         
-                        {!['Cricket', 'Football'].includes(match.sport) && (
+                        {isRacquetSport && scoreboard?.racquet && (
+                            <RacquetControls 
+                                teamA={scoreboard.team_a_name} 
+                                teamB={scoreboard.team_b_name} 
+                                server={scoreboard.racquet.server} 
+                                onPoint={updateRacquetScore} 
+                                onToggleServer={toggleServer} 
+                            />
+                        )}
+                        
+                        {!['Cricket', 'Football', ...Object.values(Sport).filter(s => isRacquetSport)].includes(match.sport) && (
                             <div className="text-center py-16 flex flex-col items-center justify-center border-2 border-dashed border-gray-100 dark:border-gray-700 rounded-2xl bg-gray-50 dark:bg-gray-800/50">
                                 <MoreHorizontal size={48} className="text-gray-300 mb-4"/>
                                 <p className="font-bold text-gray-400">Simple Scoreboard</p>
@@ -109,9 +133,9 @@ const LiveMatchModal: React.FC<LiveMatchModalProps> = ({ match, onClose, onShare
                             {[1,2,3].map(i => (
                                 <div key={i} className="relative animate-fade-in-up" style={{animationDelay: `${i*100}ms`}}>
                                     <div className="absolute -left-[21px] top-0 w-3 h-3 bg-gray-200 dark:bg-gray-700 rounded-full border-2 border-white dark:border-darkcard"></div>
-                                    <div className="text-xs font-bold text-gray-400 mb-1">4{i}th Minute</div>
+                                    <div className="text-xs font-bold text-gray-400 mb-1">Live Update</div>
                                     <p className="text-sm text-midnight dark:text-white font-medium">
-                                        {i === 1 ? "Goal! Striker blasts it into the top corner." : "Great save by the keeper to deny a certain goal."}
+                                        {i === 1 ? "Point scored!" : "Good rally."}
                                     </p>
                                 </div>
                             ))}

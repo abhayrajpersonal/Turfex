@@ -1,5 +1,5 @@
 
-import { UserProfile, UserType, KycStatus, Sport, OpenMatch, LeaderboardEntry, UserTier, Team, ChatRoom, WalletTransaction, Notification, ActivityLog, Tournament, Turf } from './types';
+import { UserProfile, UserType, KycStatus, Sport, OpenMatch, LeaderboardEntry, UserTier, Team, ChatRoom, WalletTransaction, Notification, ActivityLog, Tournament, Turf, TournamentBracketData, FriendActivity, MerchItem, Coach, RentalItem } from './types';
 
 export const MOCK_USER: UserProfile = {
   id: 'u1',
@@ -21,8 +21,22 @@ export const MOCK_USER: UserProfile = {
     matches_played: 45,
     matches_won: 28,
     man_of_the_match: 5,
-    total_score: 122, // Goals/Runs mixed context for demo
+    total_score: 122, 
     mvp_badges: 3
+  },
+  credibility: {
+    total: 88,
+    breakdown: {
+      reliability: 95,
+      skill: 80,
+      fair_play: 90
+    },
+    endorsements: [
+      { skill: 'Pace', count: 12 },
+      { skill: 'Finishing', count: 8 },
+      { skill: 'Teamwork', count: 15 },
+      { skill: 'Vision', count: 5 }
+    ]
   }
 };
 
@@ -234,5 +248,228 @@ export const MOCK_TOURNAMENTS: Tournament[] = [
     id: 'tr2', name: 'Smash Zone Open', sport: Sport.BADMINTON, start_date: '2024-08-01', end_date: '2024-08-02',
     entry_fee: 1500, prize_pool: 10000, location: 'Smash Zone, Bandra', registered_teams: 8, max_teams: 32,
     image_url: 'https://picsum.photos/600/300?r=98'
+  }
+];
+
+export const MOCK_BRACKET: TournamentBracketData = {
+    id: 'br1',
+    tournament_id: 'tr1',
+    matches: [
+        // Quarter Finals
+        { id: 'm1', round: 1, team1: { name: 'Mumbai Indians FC', score: 2 }, team2: { name: 'Juhu Juggernauts', score: 1 }, date: '2024-07-15', status: 'COMPLETED', winner: 'Mumbai Indians FC' },
+        { id: 'm2', round: 1, team1: { name: 'Bandra Boys', score: 0 }, team2: { name: 'Powai Panthers', score: 3 }, date: '2024-07-15', status: 'COMPLETED', winner: 'Powai Panthers' },
+        { id: 'm3', round: 1, team1: { name: 'Thane Tigers', score: 1 }, team2: { name: 'Dadar Dynamos', score: 0 }, date: '2024-07-16', status: 'COMPLETED', winner: 'Thane Tigers' },
+        { id: 'm4', round: 1, team1: { name: 'Colaba Coolers', score: 2 }, team2: { name: 'Worli Warriors', score: 2 }, date: '2024-07-16', status: 'COMPLETED', winner: 'Worli Warriors' }, // Penalties implied
+        // Semi Finals
+        { id: 'm5', round: 2, team1: { name: 'Mumbai Indians FC', score: 1 }, team2: { name: 'Powai Panthers', score: 2 }, date: '2024-07-18', status: 'COMPLETED', winner: 'Powai Panthers' },
+        { id: 'm6', round: 2, team1: { name: 'Thane Tigers' }, team2: { name: 'Worli Warriors' }, date: '2024-07-18', status: 'SCHEDULED' },
+        // Finals
+        { id: 'm7', round: 3, team1: { name: 'Powai Panthers' }, team2: { name: 'TBD' }, date: '2024-07-20', status: 'SCHEDULED' },
+    ]
+};
+
+export const MOCK_FRIENDS_ACTIVITY: FriendActivity[] = [
+  {
+    id: 'fa1',
+    user_id: 'u2',
+    username: 'pickle_rick',
+    avatar_url: 'https://picsum.photos/50/50?r=2',
+    turf_id: 't2',
+    turf_name: 'Smash Zone',
+    sport: 'Pickleball',
+    start_time: new Date().toISOString(), // Live
+    status: 'LIVE',
+    lat: 19.0596,
+    lng: 72.8295
+  },
+  {
+    id: 'fa2',
+    user_id: 'u3',
+    username: 'net_master',
+    avatar_url: 'https://picsum.photos/50/50?r=3',
+    turf_id: 't1',
+    turf_name: 'Kickoff Arena',
+    sport: 'Football',
+    start_time: new Date(Date.now() + 3600000).toISOString(), // Upcoming
+    status: 'UPCOMING',
+    lat: 19.1136,
+    lng: 72.8697
+  },
+  {
+    id: 'fa3',
+    user_id: 'u4',
+    username: 'speedy',
+    avatar_url: 'https://picsum.photos/50/50?r=4',
+    turf_id: 't3',
+    turf_name: 'Green Field Box',
+    sport: 'Cricket',
+    start_time: new Date(Date.now() - 1800000).toISOString(), // Playing for 30 mins
+    status: 'LIVE',
+    lat: 19.1187,
+    lng: 72.9073
+  }
+];
+
+export const MOCK_MERCH_ITEMS: MerchItem[] = [
+  {
+    id: 'merch1',
+    name: 'Turfex Pro Jersey',
+    description: 'Breathable, sweat-wicking fabric designed for high-intensity matches. Features the iconic Turfex home colors.',
+    price: 899,
+    category: 'Apparel',
+    image_url: 'https://images.unsplash.com/photo-1529815482062-79482b834725?w=500&auto=format&fit=crop&q=60',
+    rating: 4.8,
+    reviews_count: 124,
+    is_new: true,
+    colors: ['#1A1A1A', '#0057FF']
+  },
+  {
+    id: 'merch2',
+    name: 'Elite Grip Socks',
+    description: 'Anti-slip technology to keep you locked in your boots. Prevent blisters and improve agility.',
+    price: 299,
+    original_price: 399,
+    category: 'Apparel',
+    image_url: 'https://images.unsplash.com/photo-1579758629938-03607ccdbaba?w=500&auto=format&fit=crop&q=60',
+    rating: 4.9,
+    reviews_count: 450,
+    is_bestseller: true,
+    colors: ['#FFFFFF', '#000000']
+  },
+  {
+    id: 'merch3',
+    name: 'Match Day Football',
+    description: 'FIFA quality approved size 5 football. Thermally bonded surface for predictable trajectory.',
+    price: 1499,
+    category: 'Equipment',
+    image_url: 'https://images.unsplash.com/photo-1614632537190-23e4146777db?w=500&auto=format&fit=crop&q=60',
+    rating: 4.7,
+    reviews_count: 89
+  },
+  {
+    id: 'merch4',
+    name: 'Turfex Sipper',
+    description: '750ml insulated bottle to keep your water cold during those hot afternoon games.',
+    price: 499,
+    category: 'Accessories',
+    image_url: 'https://images.unsplash.com/photo-1602143407151-011141950038?w=500&auto=format&fit=crop&q=60',
+    rating: 4.5,
+    reviews_count: 56,
+    colors: ['#0057FF', '#FF7043']
+  },
+  {
+    id: 'merch5',
+    name: 'Tactical Duffle',
+    description: 'Separate compartment for boots and wet clothes. 40L capacity.',
+    price: 1999,
+    category: 'Accessories',
+    image_url: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=500&auto=format&fit=crop&q=60',
+    rating: 4.9,
+    reviews_count: 210,
+    is_bestseller: true
+  },
+  {
+    id: 'merch6',
+    name: 'Training Bibs (Set)',
+    description: 'Set of 10 lightweight mesh bibs. Essential for organizing practice matches.',
+    price: 1200,
+    category: 'Equipment',
+    image_url: 'https://images.unsplash.com/photo-1517466787929-bc90951d6dbb?w=500&auto=format&fit=crop&q=60',
+    rating: 4.6,
+    reviews_count: 34,
+    colors: ['#32CD32', '#FFD700']
+  }
+];
+
+export const MOCK_COACHES: Coach[] = [
+  {
+    id: 'ch1',
+    name: 'Rahul Dravid (Ex-State)',
+    sport: 'Cricket',
+    experience: '15 Years',
+    rate_per_session: 1500,
+    rating: 4.9,
+    reviews_count: 120,
+    avatar_url: 'https://randomuser.me/api/portraits/men/45.jpg',
+    specialization: 'Batting Technique',
+    is_verified: true
+  },
+  {
+    id: 'ch2',
+    name: 'Sunil Chhetri Acad.',
+    sport: 'Football',
+    experience: '8 Years',
+    rate_per_session: 800,
+    rating: 4.7,
+    reviews_count: 85,
+    avatar_url: 'https://randomuser.me/api/portraits/men/32.jpg',
+    specialization: 'Striker Drills',
+    is_verified: true
+  },
+  {
+    id: 'ch3',
+    name: 'Saina Club',
+    sport: 'Badminton',
+    experience: '10 Years',
+    rate_per_session: 1200,
+    rating: 4.8,
+    reviews_count: 200,
+    avatar_url: 'https://randomuser.me/api/portraits/women/44.jpg',
+    specialization: 'Agility & Smash',
+    is_verified: true
+  },
+  {
+    id: 'ch4',
+    name: 'Pickle Pro Steve',
+    sport: 'Pickleball',
+    experience: '3 Years',
+    rate_per_session: 500,
+    rating: 4.6,
+    reviews_count: 40,
+    avatar_url: 'https://randomuser.me/api/portraits/men/22.jpg',
+    specialization: 'Dinking & Strategy',
+    is_verified: false
+  }
+];
+
+export const MOCK_RENTALS: RentalItem[] = [
+  {
+    id: 'r1',
+    name: 'Wilson Pro Staff RF97',
+    category: 'Tennis',
+    daily_rate: 300,
+    owner_id: 'u5',
+    owner_name: 'Roger F.',
+    owner_avatar: 'https://randomuser.me/api/portraits/men/88.jpg',
+    image_url: 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?w=500&auto=format&fit=crop&q=60',
+    distance_km: 1.2,
+    description: 'Pro level racket, freshly strung. Great condition.',
+    available: true
+  },
+  {
+    id: 'r2',
+    name: 'Nike Mercurial Superfly (Size 9)',
+    category: 'Football',
+    daily_rate: 200,
+    owner_id: 'u6',
+    owner_name: 'Cristiano',
+    owner_avatar: 'https://randomuser.me/api/portraits/men/7.jpg',
+    image_url: 'https://images.unsplash.com/photo-1511886929837-354d827aae26?w=500&auto=format&fit=crop&q=60',
+    distance_km: 0.5,
+    description: 'Elite cleats for turf. Used only twice.',
+    available: true
+  },
+  {
+    id: 'r3',
+    name: 'GM Diamond Cricket Bat',
+    category: 'Cricket',
+    daily_rate: 400,
+    owner_id: 'u7',
+    owner_name: 'Ben S.',
+    owner_avatar: 'https://randomuser.me/api/portraits/men/33.jpg',
+    image_url: 'https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=500&auto=format&fit=crop&q=60',
+    distance_km: 2.5,
+    description: 'English willow, Grade 1. incredible ping.',
+    available: true
   }
 ];

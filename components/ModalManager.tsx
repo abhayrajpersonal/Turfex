@@ -4,8 +4,9 @@ import { Loader2 } from 'lucide-react';
 import { useUI } from '../context/UIContext';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
-import { MOCK_WALLET_TRANSACTIONS, MOCK_SEARCHABLE_USERS } from '../lib/mockData';
-import { Booking, Sport, Team } from '../lib/types';
+import { MOCK_WALLET_TRANSACTIONS, MOCK_SEARCHABLE_USERS, MOCK_BRACKET } from '../lib/mockData';
+import { Booking, Sport, Team, Tournament } from '../lib/types';
+import Confetti from './common/Confetti';
 
 // Lazy Load Modals
 const BookingModal = React.lazy(() => import('./BookingModal'));
@@ -17,6 +18,13 @@ const QRCodeModal = React.lazy(() => import('./QRCodeModal'));
 const ReviewModal = React.lazy(() => import('./ReviewModal'));
 const CreateTeamModal = React.lazy(() => import('./CreateTeamModal'));
 const LiveMatchModal = React.lazy(() => import('./scoreboard/LiveMatchModal'));
+const EndorsementModal = React.lazy(() => import('./social/EndorsementModal'));
+const RingerModal = React.lazy(() => import('./booking/RingerModal'));
+const TournamentBracket = React.lazy(() => import('./tournament/TournamentBracket'));
+const ProductDetailsModal = React.lazy(() => import('./merch/ProductDetailsModal'));
+const CartModal = React.lazy(() => import('./merch/CartModal'));
+const TournamentRegistrationModal = React.lazy(() => import('./tournament/TournamentRegistrationModal'));
+const CoachBookingModal = React.lazy(() => import('./CoachBookingModal'));
 
 const ModalLoader = () => (
   <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/10 backdrop-blur-sm">
@@ -25,9 +33,9 @@ const ModalLoader = () => (
 );
 
 const ModalManager: React.FC = () => {
-  const { activeModal, setActiveModal, modalData, showToast } = useUI();
+  const { activeModal, setActiveModal, modalData, showToast, triggerConfetti, showConfetti } = useUI();
   const { user, updateProfile, completeKyc, upgradeTier, updateWallet } = useAuth();
-  const { bookings, addBooking, addNotification, createTeam } = useData();
+  const { bookings, addBooking, addNotification, createTeam, updateMatch, teams } = useData();
 
   const handleClose = () => setActiveModal(null);
 
@@ -65,28 +73,12 @@ const ModalManager: React.FC = () => {
        created_at: new Date().toISOString()
     });
 
-    // Simulate sending payment requests to split users
-    if (splitWith.length > 0) {
-       splitWith.forEach(username => {
-          // Check if it's a real user handle
-          if (username.startsWith('@')) {
-             const cleanName = username.substring(1).toLowerCase();
-             const foundUser = MOCK_SEARCHABLE_USERS.find(u => u.username.toLowerCase() === cleanName);
-             if (foundUser) {
-                // In a real app, we would send this to the backend
-                console.log(`Sending payment request to ${foundUser.id} (${foundUser.username})`);
-                // Simulate a toast for the sender
-             }
-          }
-       });
-       setTimeout(() => {
-           showToast(`Payment requests sent to ${splitWith.length} friends`, 'success');
-       }, 500);
-    }
-
     handleClose();
     if (splitWith.length === 0) {
-        showToast(`Booked ${modalData.turf.name} successfully!`);
+        showToast(`Booked ${modalData.turf.name} successfully!`, 'success');
+        triggerConfetti();
+    } else {
+        showToast(`Payment requests sent to ${splitWith.length} friends`, 'success');
     }
   };
 
@@ -107,6 +99,7 @@ const ModalManager: React.FC = () => {
      createTeam(newTeam);
      handleClose();
      showToast(`Team ${name} created successfully!`, 'success');
+     triggerConfetti();
   };
 
   const handleWaitlist = () => {
@@ -119,10 +112,66 @@ const ModalManager: React.FC = () => {
       showToast("Live Match Link Copied!", "success");
   };
 
-  if (!activeModal || !user) return null;
+  const handleEndorse = (skills: string[], playerId: string) => {
+      handleClose();
+      showToast(`Endorsed player for ${skills.join(', ')}!`, 'success');
+      triggerConfetti();
+  };
+
+  const handleRinger = (role: string, bounty: string) => {
+      handleClose();
+      showToast(`Broadcast sent: Looking for ${role} (${bounty})`, 'success');
+  };
+
+  const handleMatchFinish = (summary: any) => {
+      if (modalData?.id) {
+          updateMatch(modalData.id, { 
+              status: 'COMPLETED',
+              summary: summary 
+          });
+          showToast("Match Completed!", 'success');
+          triggerConfetti();
+      }
+  };
+
+  const handleTournamentRegister = (teamId: string) => {
+      if (!user || !modalData) return;
+      const tournament = modalData as Tournament;
+      const team = teams.find(t => t.id === teamId);
+      
+      // Simulate Payment
+      updateWallet(-tournament.entry_fee);
+      
+      handleClose();
+      showToast(`Registered ${team?.name} for ${tournament.name}!`, 'success');
+      triggerConfetti();
+      
+      addNotification({
+          id: `notif-${Date.now()}`,
+          user_id: user.id,
+          type: 'SYSTEM',
+          message: `Registration confirmed for ${tournament.name}. Good luck!`,
+          is_read: false,
+          created_at: new Date().toISOString()
+      });
+  };
+
+  const handleCoachBooking = (date: string, time: string) => {
+      handleClose();
+      showToast(`Session with ${modalData?.name} confirmed for ${date} at ${time}!`, 'success');
+      triggerConfetti();
+  };
+
+  if (!activeModal || !user) return (
+      <>
+        {showConfetti && <Confetti />}
+      </>
+  );
 
   return (
     <Suspense fallback={<ModalLoader />}>
+      {showConfetti && <Confetti />}
+      
       {activeModal === 'booking' && modalData?.turf && (
         <BookingModal 
            turf={modalData.turf} 
@@ -130,6 +179,7 @@ const ModalManager: React.FC = () => {
            onClose={handleClose} 
            onConfirm={confirmBooking}
            onWaitlist={handleWaitlist}
+           initialDate={modalData.initialDate}
         />
       )}
       {activeModal === 'review' && modalData && (
@@ -142,7 +192,7 @@ const ModalManager: React.FC = () => {
         <EditProfileModal user={user} onClose={handleClose} onSave={(n, c) => { updateProfile(n, c); handleClose(); showToast("Profile Updated!"); }} />
       )}
       {activeModal === 'subscription' && (
-        <SubscriptionModal onClose={handleClose} onSubscribe={() => { upgradeTier(); handleClose(); showToast("Welcome to Gold!"); }} />
+        <SubscriptionModal onClose={handleClose} onSubscribe={() => { upgradeTier(); handleClose(); showToast("Welcome to Gold!"); triggerConfetti(); }} />
       )}
       {activeModal === 'wallet' && (
         <WalletModal user={user} transactions={MOCK_WALLET_TRANSACTIONS} onClose={handleClose} />
@@ -154,7 +204,42 @@ const ModalManager: React.FC = () => {
         <CreateTeamModal onClose={handleClose} onCreate={handleCreateTeam} />
       )}
       {activeModal === 'live_match' && modalData && (
-        <LiveMatchModal match={modalData} onClose={handleClose} onShare={handleShareMatch} />
+        <LiveMatchModal 
+            match={modalData} 
+            onClose={handleClose} 
+            onShare={handleShareMatch} 
+            onFinish={handleMatchFinish} 
+        />
+      )}
+      {activeModal === 'endorsement' && (
+        <EndorsementModal onClose={handleClose} onSubmit={handleEndorse} />
+      )}
+      {activeModal === 'ringer' && (
+        <RingerModal onClose={handleClose} onSubmit={handleRinger} />
+      )}
+      {activeModal === 'bracket' && (
+        <TournamentBracket bracket={MOCK_BRACKET} onClose={handleClose} />
+      )}
+      {activeModal === 'product_details' && modalData && (
+        <ProductDetailsModal product={modalData} onClose={handleClose} />
+      )}
+      {activeModal === 'cart' && (
+        <CartModal onClose={handleClose} />
+      )}
+      {activeModal === 'tournament_register' && modalData && (
+        <TournamentRegistrationModal 
+            tournament={modalData} 
+            onClose={handleClose} 
+            onConfirm={handleTournamentRegister}
+            onCreateTeamRedirect={() => setActiveModal('create_team')}
+        />
+      )}
+      {activeModal === 'coach_booking' && modalData && (
+        <CoachBookingModal 
+            coach={modalData}
+            onClose={handleClose}
+            onConfirm={handleCoachBooking}
+        />
       )}
     </Suspense>
   );

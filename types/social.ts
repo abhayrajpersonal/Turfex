@@ -36,3 +36,17 @@ export interface Notification {
   created_at: string;
   action_link?: string;
 }
+
+export interface FriendActivity {
+  id: string;
+  user_id: string;
+  username: string;
+  avatar_url: string;
+  turf_id: string;
+  turf_name: string;
+  sport: string;
+  start_time: string;
+  status: 'LIVE' | 'UPCOMING';
+  lat: number;
+  lng: number;
+}

@@ -14,6 +14,7 @@ import LeaderboardScreen from './features/social/LeaderboardScreen';
 import SocialScreen from './features/social/SocialScreen';
 import DashboardScreen from './features/dashboard/DashboardScreen';
 import ScoreboardScreen from './features/scoreboard/ScoreboardScreen';
+import MerchScreen from './features/merch/MerchScreen';
 
 // Providers
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -50,6 +51,7 @@ const TurfexApp = () => {
       case 'discover': return <DiscoverScreen />;
       case 'matches': return <MyMatchesScreen />;
       case 'scoreboard': return <ScoreboardScreen />;
+      case 'merch': return <MerchScreen />;
       case 'social': return <SocialScreen />;
       case 'leaderboard': return <LeaderboardScreen />;
       case 'dashboard': 

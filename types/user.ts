@@ -27,6 +27,21 @@ export interface PlayerStats {
   mvp_badges: number;
 }
 
+export interface SkillEndorsement {
+  skill: string;
+  count: number;
+}
+
+export interface CredibilityScore {
+  total: number; // 0-100
+  breakdown: {
+    reliability: number; // based on attendance
+    skill: number; // based on endorsements
+    fair_play: number; // based on peer reviews
+  };
+  endorsements: SkillEndorsement[];
+}
+
 export interface UserProfile {
   id: string;
   phone: string;
@@ -44,6 +59,7 @@ export interface UserProfile {
   streak_days: number;
   referral_code: string;
   stats: PlayerStats;
+  credibility?: CredibilityScore;
 }
 
 export interface WalletTransaction {

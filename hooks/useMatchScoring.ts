@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { OpenMatch, Sport } from '../lib/types';
 
@@ -51,9 +50,72 @@ export const useMatchScoring = (match: OpenMatch, onUpdate?: (newScoreboard: any
       if(onUpdate) onUpdate(newScoreboard);
   };
 
+  const updateRacquetScore = (team: 'A' | 'B') => {
+      if (!scoreboard?.racquet) return;
+      
+      const currentSetIdx = scoreboard.racquet.current_set;
+      const currentSets = [...scoreboard.racquet.sets];
+      
+      // Initialize set if needed
+      if (!currentSets[currentSetIdx]) {
+          currentSets[currentSetIdx] = { a: 0, b: 0 };
+      }
+
+      const currentSetScore = { ...currentSets[currentSetIdx] };
+      
+      if (team === 'A') {
+          currentSetScore.a += 1;
+      } else {
+          currentSetScore.b += 1;
+      }
+      
+      currentSets[currentSetIdx] = currentSetScore;
+
+      // Check for set completion (Simple rule: 21 points, win by 2)
+      // For demo we use 21 for all, ideally this would be configurable based on Sport
+      const WIN_POINT = match.sport === Sport.PICKLEBALL ? 11 : 21;
+      const isSetComplete = (currentSetScore.a >= WIN_POINT || currentSetScore.b >= WIN_POINT) && Math.abs(currentSetScore.a - currentSetScore.b) >= 2;
+
+      let nextSetIdx = currentSetIdx;
+      if (isSetComplete) {
+          nextSetIdx += 1;
+          currentSets.push({ a: 0, b: 0 }); // Prep next set
+      }
+
+      const newScoreboard = {
+          ...scoreboard,
+          racquet: {
+              ...scoreboard.racquet,
+              sets: currentSets,
+              current_set: nextSetIdx,
+              server: team // Winner serves usually
+          },
+          last_update: isSetComplete ? `Set ${currentSetIdx + 1} Finished!` : 'Point Scored'
+      };
+
+      setScoreboard(newScoreboard);
+      if (onUpdate) onUpdate(newScoreboard);
+  };
+
+  const toggleServer = () => {
+      if (!scoreboard?.racquet) return;
+      const newServer: 'A' | 'B' = scoreboard.racquet.server === 'A' ? 'B' : 'A';
+      const newScoreboard = {
+          ...scoreboard,
+          racquet: {
+              ...scoreboard.racquet,
+              server: newServer
+          }
+      };
+      setScoreboard(newScoreboard);
+      if (onUpdate) onUpdate(newScoreboard);
+  };
+
   return {
     scoreboard,
     updateCricketScore,
-    updateFootballScore
+    updateFootballScore,
+    updateRacquetScore,
+    toggleServer
   };
 };

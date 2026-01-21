@@ -1,7 +1,8 @@
 
-import React from 'react';
-import { X, Bell, Calendar, UserPlus, Wallet, Info } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Bell, Calendar, UserPlus, Wallet, Info, BellRing } from 'lucide-react';
 import { Notification } from '../../lib/types';
+import { requestNotificationPermission } from '../../lib/utils';
 
 interface NotificationPanelProps {
   notifications: Notification[];
@@ -11,6 +12,24 @@ interface NotificationPanelProps {
 }
 
 const NotificationPanel: React.FC<NotificationPanelProps> = ({ notifications, isOpen, onClose, onClear }) => {
+  const [permission, setPermission] = useState<NotificationPermission>('default');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setPermission(Notification.permission);
+    }
+  }, [isOpen]);
+
+  const handleEnableNotifications = async () => {
+    const granted = await requestNotificationPermission();
+    if (granted) {
+      setPermission('granted');
+      new Notification('Notifications Enabled! 🔔', { body: 'You will now receive match reminders.' });
+    } else {
+      setPermission('denied');
+    }
+  };
+
   if (!isOpen) return null;
 
   const getIcon = (type: string) => {
@@ -39,6 +58,22 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ notifications, is
        </div>
        
        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {permission === 'default' && (
+             <div className="bg-electric/10 border border-electric/20 p-4 rounded-xl mb-4 flex items-start gap-3">
+                <BellRing size={20} className="text-electric shrink-0 mt-1" />
+                <div>
+                   <p className="text-sm font-bold text-midnight dark:text-white mb-1">Get Match Reminders</p>
+                   <p className="text-xs text-gray-500 mb-3">Enable push notifications to never miss a game.</p>
+                   <button 
+                     onClick={handleEnableNotifications}
+                     className="bg-electric text-white text-xs font-bold px-3 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                   >
+                     Enable Notifications
+                   </button>
+                </div>
+             </div>
+          )}
+
           {notifications.length === 0 ? (
             <div className="text-center py-20 text-gray-400">
                <Bell size={48} className="mx-auto mb-4 opacity-20" />

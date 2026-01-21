@@ -1,9 +1,9 @@
 
 import React, { useState, useMemo } from 'react';
-import { X, Calendar, Repeat, Users, ShoppingBag, AlertCircle, UserCheck, Flag, Zap, Plus, Trash2, ArrowRight, ArrowLeft, Check, Link, Copy, Search, Loader2 } from 'lucide-react';
+import { X, Repeat, Users, AlertCircle, UserCheck, Flag, Zap, Plus, ArrowRight, ArrowLeft, Check, Loader2, Skull } from 'lucide-react';
 import { Turf, Sport, Booking } from '../lib/types';
-import Logo from './common/Logo';
 import CustomCalendar from './common/CustomCalendar';
+import PaymentReceipt from './booking/PaymentReceipt';
 import { useUI } from '../context/UIContext';
 import { MOCK_SEARCHABLE_USERS } from '../lib/mockData';
 
@@ -11,26 +11,31 @@ interface BookingModalProps {
   turf: Turf;
   existingBookings: Booking[];
   onClose: () => void;
-  onConfirm: (date: string, time: string, sport: Sport, addOns: string[], equipment: string[], price: number, splitWith: string[]) => void;
+  onConfirm: (date: string, time: string, sport: Sport, addOns: string[], equipment: string[], price: number, splitWith: string[], paymentMode?: string) => void;
   onWaitlist: (date: string, time: string, sport: Sport) => void;
+  initialDate?: string;
 }
 
-const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onClose, onConfirm, onWaitlist }) => {
+const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onClose, onConfirm, onWaitlist, initialDate }) => {
   const { showToast } = useUI();
   const [step, setStep] = useState(1);
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(initialDate || new Date().toISOString().split('T')[0]);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [selectedSport, setSelectedSport] = useState<Sport>(turf.sports_supported[0]);
   
   // Features State
   const [isRecurring, setIsRecurring] = useState(false);
   const [isSplit, setIsSplit] = useState(false);
+  const [isLoserPays, setIsLoserPays] = useState(false);
   
   // Enhanced Split User State
   const [splitUsers, setSplitUsers] = useState<{ name: string; avatar?: string; isVerified: boolean }[]>([]);
   const [newSplitUser, setNewSplitUser] = useState('');
   const [isSearchingUser, setIsSearchingUser] = useState(false);
-  const [splitLinkCopied, setSplitLinkCopied] = useState(false);
+
+  // Coupon State
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{code: string, discount: number} | null>(null);
 
   const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
   const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
@@ -70,14 +75,41 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
   
   const equipmentCost = turf.rental_equipment.filter(e => selectedEquipment.includes(e.id)).reduce((acc, curr) => acc + curr.price, 0);
   const addOnCost = (selectedAddOns.includes('COACH') ? 500 : 0) + (selectedAddOns.includes('REFEREE') ? 300 : 0);
-  const totalCost = basePrice + equipmentCost + addOnCost;
+  let totalCost = basePrice + equipmentCost + addOnCost;
+
+  if (appliedCoupon) {
+      totalCost = Math.max(0, totalCost - appliedCoupon.discount);
+  }
+
   const perPersonCost = isSplit && splitUsers.length > 0 ? Math.ceil(totalCost / (splitUsers.length + 1)) : totalCost;
+  
+  // Define paymentMode here to ensure it's available for render
+  const paymentMode = isLoserPays ? 'LOSER_PAYS' : isSplit ? 'SPLIT' : 'FULL';
+
+  const handleApplyCoupon = () => {
+     if (couponCode.toUpperCase() === 'TURFEX50') {
+         setAppliedCoupon({ code: 'TURFEX50', discount: 50 });
+         showToast("Coupon applied! ₹50 off.");
+     } else if (couponCode.toUpperCase() === 'WELCOME100') {
+         setAppliedCoupon({ code: 'WELCOME100', discount: 100 });
+         showToast("Welcome bonus applied! ₹100 off.");
+     } else {
+         showToast("Invalid coupon code", "error");
+         setAppliedCoupon(null);
+     }
+  };
 
   const handleConfirm = () => {
     if (selectedSlot) {
       if (isSelectedSlotBooked) {
         onWaitlist(date, selectedSlot, selectedSport);
       } else {
+        // Validation for Loser Pays
+        if (isLoserPays && splitUsers.length === 0) {
+            showToast("Add at least one opponent for Loser Pays mode!", "error");
+            return;
+        }
+
         onConfirm(
             date, 
             selectedSlot, 
@@ -85,7 +117,8 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
             selectedAddOns, 
             selectedEquipment, 
             totalCost, 
-            isSplit ? splitUsers.map(u => u.name) : []
+            (isSplit || isLoserPays) ? splitUsers.map(u => u.name) : [],
+            paymentMode
         );
       }
     }
@@ -121,18 +154,10 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
     }, 400);
   };
 
-  const copySplitLink = () => {
-    navigator.clipboard.writeText(`https://turfex.app/pay/split/${Math.random().toString(36).substring(7)}`);
-    setSplitLinkCopied(true);
-    showToast("Split link copied!");
-    setTimeout(() => setSplitLinkCopied(false), 2000);
-  };
-
   const nextStep = () => setStep(s => s + 1);
   const prevStep = () => setStep(s => s - 1);
 
   // --- WIZARD STEPS CONTENT ---
-
   const renderStep1 = () => (
     <div className="space-y-6 animate-fade-in-up">
       <div>
@@ -144,10 +169,11 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
               role="radio"
               aria-checked={selectedSport === sport}
               onClick={() => setSelectedSport(sport)}
-              className={`p-4 rounded-xl text-sm font-bold border transition-all duration-200 flex items-center justify-between outline-none focus-visible:ring-2 focus-visible:ring-electric ${selectedSport === sport ? 'bg-electric text-white border-transparent shadow-lg shadow-blue-500/30' : 'bg-offwhite dark:bg-gray-800 border-transparent text-midnight dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+              className={`p-6 rounded-2xl text-sm font-bold border transition-all duration-300 flex flex-col items-center justify-center gap-2 outline-none focus-visible:ring-2 focus-visible:ring-electric ${selectedSport === sport ? 'bg-electric text-white border-transparent shadow-lg shadow-blue-500/30 scale-[1.02]' : 'bg-offwhite dark:bg-gray-800 border-transparent text-midnight dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
             >
-              {sport}
-              {selectedSport === sport && <Check size={16} aria-hidden="true" />}
+              {selectedSport === sport && <div className="absolute top-2 right-2"><Check size={14}/></div>}
+              <span className="text-2xl">{sport === 'Football' ? '⚽' : sport === 'Cricket' ? '🏏' : sport === 'Badminton' ? '🏸' : sport === 'Tennis' ? '🎾' : '🏓'}</span>
+              <span>{sport}</span>
             </button>
           ))}
         </div>
@@ -163,7 +189,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
         <button 
           onClick={() => setIsRecurring(!isRecurring)}
           aria-pressed={isRecurring}
-          className={`w-full mt-4 py-3 px-4 rounded-xl text-sm font-medium border flex items-center justify-center gap-2 transition-all outline-none focus-visible:ring-2 focus-visible:ring-electric ${isRecurring ? 'bg-electric/10 border-electric text-electric' : 'bg-offwhite dark:bg-gray-800 border-transparent text-gray-600 dark:text-gray-300'}`}
+          className={`w-full mt-4 py-3 px-4 rounded-xl text-sm font-medium border flex items-center justify-center gap-2 transition-all outline-none focus-visible:ring-2 focus-visible:ring-electric ${isRecurring ? 'bg-electric/10 border-electric text-electric' : 'bg-offwhite dark:bg-gray-800 border-transparent text-gray-600 dark:text-gray-300 hover:bg-gray-100'}`}
           >
             <Repeat size={16} aria-hidden="true" />
             {isRecurring ? 'Recurring Booking (Weekly)' : 'One-time Booking'}
@@ -184,7 +210,6 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
             <h4 className="text-xs font-bold text-courtgray uppercase mb-3 flex items-center gap-2">
               {period === 'Morning' ? '🌅' : period === 'Evening' ? '🌇' : '🌙'} {period}
             </h4>
-            {/* Improved grid layout for better spacing on mobile */}
             <div className="grid grid-cols-3 md:grid-cols-3 gap-2" role="listbox" aria-label={`${period} Slots`}>
               {groups[period].map((slot: string) => {
                 const isBooked = bookedSlots.includes(slot);
@@ -198,9 +223,9 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
                     aria-selected={selectedSlot === slot}
                     disabled={isBooked}
                     onClick={() => setSelectedSlot(slot)}
-                    className={`py-3 px-1 rounded-xl text-sm font-medium text-center border transition-all relative overflow-hidden flex flex-col items-center justify-center min-h-[50px] outline-none focus-visible:ring-2 focus-visible:ring-electric ${
+                    className={`py-3 px-1 rounded-xl text-sm font-medium text-center border transition-all relative overflow-hidden flex flex-col items-center justify-center min-h-[50px] outline-none focus-visible:ring-2 focus-visible:ring-electric active:scale-95 ${
                       selectedSlot === slot
-                        ? 'bg-electric text-white border-transparent shadow-lg scale-[1.02]'
+                        ? 'bg-electric text-white border-transparent shadow-lg scale-[1.05] ring-2 ring-blue-300 dark:ring-blue-900'
                         : isBooked 
                             ? 'bg-gray-100 dark:bg-gray-800 text-courtgray border-transparent cursor-not-allowed opacity-50' 
                             : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-blue-300'
@@ -232,7 +257,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
                   <button 
                        onClick={() => setSelectedAddOns(prev => prev.includes('COACH') ? prev.filter(x => x !== 'COACH') : [...prev, 'COACH'])} 
                        aria-pressed={selectedAddOns.includes('COACH')}
-                       className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all text-left outline-none focus-visible:ring-2 focus-visible:ring-electric ${selectedAddOns.includes('COACH') ? 'bg-electric/10 border-electric' : 'border-gray-100 dark:border-gray-700 hover:bg-offwhite dark:hover:bg-gray-800'}`}>
+                       className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all text-left outline-none focus-visible:ring-2 focus-visible:ring-electric active:scale-[0.98] ${selectedAddOns.includes('COACH') ? 'bg-electric/10 border-electric shadow-sm' : 'border-gray-100 dark:border-gray-700 hover:bg-offwhite dark:hover:bg-gray-800'}`}>
                      <div className={`p-2 rounded-lg ${selectedAddOns.includes('COACH') ? 'bg-electric text-white' : 'bg-offwhite text-courtgray'}`}><UserCheck size={20} /></div>
                      <div>
                         <p className="text-sm font-bold text-midnight dark:text-white">Coach</p>
@@ -244,7 +269,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
                   <button 
                        onClick={() => setSelectedAddOns(prev => prev.includes('REFEREE') ? prev.filter(x => x !== 'REFEREE') : [...prev, 'REFEREE'])}
                        aria-pressed={selectedAddOns.includes('REFEREE')}
-                       className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all text-left outline-none focus-visible:ring-2 focus-visible:ring-electric ${selectedAddOns.includes('REFEREE') ? 'bg-orange-50 border-orange-500' : 'border-gray-100 dark:border-gray-700 hover:bg-offwhite dark:hover:bg-gray-800'}`}>
+                       className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all text-left outline-none focus-visible:ring-2 focus-visible:ring-electric active:scale-[0.98] ${selectedAddOns.includes('REFEREE') ? 'bg-orange-50 border-orange-500 shadow-sm' : 'border-gray-100 dark:border-gray-700 hover:bg-offwhite dark:hover:bg-gray-800'}`}>
                      <div className={`p-2 rounded-lg ${selectedAddOns.includes('REFEREE') ? 'bg-orange-500 text-white' : 'bg-offwhite text-courtgray'}`}><Flag size={20} /></div>
                      <div>
                         <p className="text-sm font-bold text-midnight dark:text-white">Referee</p>
@@ -265,9 +290,9 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
               <button key={item.id} 
                 onClick={() => setSelectedEquipment(prev => prev.includes(item.id) ? prev.filter(x => x !== item.id) : [...prev, item.id])}
                 aria-pressed={selectedEquipment.includes(item.id)}
-                className={`w-full flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all text-left outline-none focus-visible:ring-2 focus-visible:ring-electric ${
+                className={`w-full flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all text-left outline-none focus-visible:ring-2 focus-visible:ring-electric active:scale-[0.98] ${
                   selectedEquipment.includes(item.id) 
-                    ? 'bg-electric/10 border-electric' 
+                    ? 'bg-electric/10 border-electric shadow-sm' 
                     : 'border-gray-100 dark:border-gray-700 hover:bg-offwhite dark:hover:bg-gray-800'
                 }`}
               >
@@ -278,144 +303,103 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
                       <p className="text-xs text-courtgray dark:text-gray-400">+₹{item.price}</p>
                     </div>
                  </div>
-                 {selectedEquipment.includes(item.id) && <div className="bg-electric text-white p-1 rounded-full"><Check size={12}/></div>}
+                 {selectedEquipment.includes(item.id) && <div className="bg-electric text-white p-1 rounded-full animate-scale-in"><Check size={12}/></div>}
               </button>
             ))}
           </div>
         </div>
       )}
 
-      {/* Split */}
-      <div className="bg-offwhite dark:bg-gray-800 p-4 rounded-xl">
-        <div className="flex items-center justify-between">
+      {/* Payment Options */}
+      <div className="space-y-4">
+        {/* Loser Pays Toggle */}
+        <button 
+            onClick={() => { 
+                setIsLoserPays(!isLoserPays); 
+                if(!isLoserPays) setIsSplit(false); 
+                else setSplitUsers([]); // Clear users when toggling off
+            }}
+            className={`w-full p-4 rounded-xl border-2 transition-all flex items-center justify-between group ${isLoserPays ? 'bg-red-50 dark:bg-red-900/20 border-red-500' : 'bg-offwhite dark:bg-gray-800 border-transparent hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+        >
             <div className="flex items-center gap-3">
-                <div className="p-2 bg-white dark:bg-gray-700 rounded-lg text-electric shadow-sm"><Users size={18} /></div>
-                <div>
-                <p className="text-sm font-bold text-midnight dark:text-white">Split Payment</p>
-                <p className="text-xs text-courtgray dark:text-gray-400">Share cost with friends</p>
+                <div className={`p-2 rounded-lg ${isLoserPays ? 'bg-red-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'}`}>
+                    <Skull size={20} />
+                </div>
+                <div className="text-left">
+                    <p className={`text-sm font-bold ${isLoserPays ? 'text-red-600 dark:text-red-400' : 'text-midnight dark:text-white'}`}>Loser Pays Mode</p>
+                    <p className="text-xs text-gray-500">Winner takes all. Loser pays the full amount.</p>
                 </div>
             </div>
-            <button 
-                onClick={() => setIsSplit(!isSplit)}
-                role="switch"
-                aria-checked={isSplit}
-                aria-label="Toggle split payment"
-                className={`w-12 h-7 rounded-full p-1 cursor-pointer transition-colors duration-300 outline-none focus-visible:ring-2 focus-visible:ring-electric ${isSplit ? 'bg-electric' : 'bg-gray-300 dark:bg-gray-600'}`}
-            >
-                <div className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-300 ${isSplit ? 'translate-x-5' : ''}`} />
-            </button>
-        </div>
-        {isSplit && (
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 animate-fade-in-up">
-                
-                {/* Username Search Input */}
-                <div className="flex gap-2 mb-3">
-                    <input 
-                    type="text" 
-                    placeholder="Enter @username or phone"
-                    value={newSplitUser}
-                    onChange={(e) => setNewSplitUser(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && addSplitUser()}
-                    disabled={isSearchingUser}
-                    className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-electric/20 outline-none disabled:opacity-70"
-                    />
-                    <button 
-                    onClick={addSplitUser}
-                    disabled={isSearchingUser}
-                    aria-label="Add user to split"
-                    className="bg-electric text-white p-2 rounded-lg hover:bg-blue-600 shadow-lg shadow-blue-500/30 outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:opacity-70"
-                    >
-                    {isSearchingUser ? <Loader2 size={18} className="animate-spin"/> : <Plus size={18} aria-hidden="true" />}
-                    </button>
-                </div>
+            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isLoserPays ? 'border-red-500 bg-red-500' : 'border-gray-300'}`}>
+                {isLoserPays && <Check size={12} className="text-white"/>}
+            </div>
+        </button>
 
-                {/* Added Users List */}
-                {splitUsers.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-4">
-                    {splitUsers.map((user, idx) => (
-                        <div key={idx} className="flex items-center text-xs font-bold bg-white dark:bg-gray-700 pr-2 pl-1 py-1 rounded-full border border-gray-200 dark:border-gray-600 shadow-sm text-midnight dark:text-white animate-scale-in">
-                        {user.avatar ? (
-                            <img src={user.avatar} className="w-5 h-5 rounded-full mr-2" alt={user.name} />
-                        ) : (
-                            <div className="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-600 mr-2 flex items-center justify-center text-[8px]">{user.name.charAt(0).toUpperCase()}</div>
-                        )}
-                        <span className="mr-2">{user.name}</span>
-                        <button onClick={() => setSplitUsers(splitUsers.filter((_, i) => i !== idx))} className="text-gray-400 hover:text-red-500 outline-none focus-visible:ring-2 focus-visible:ring-red-500 rounded-full" aria-label={`Remove ${user.name}`}>
-                            <X size={12} aria-hidden="true" />
-                        </button>
+        {/* Split Toggle (Only show if Loser Pays is OFF) */}
+        {!isLoserPays && (
+            <div className="bg-offwhite dark:bg-gray-800 p-4 rounded-xl">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-white dark:bg-gray-700 rounded-lg text-electric shadow-sm"><Users size={18} /></div>
+                        <div>
+                        <p className="text-sm font-bold text-midnight dark:text-white">Split Payment</p>
+                        <p className="text-xs text-courtgray dark:text-gray-400">Share cost with friends</p>
                         </div>
-                    ))}
                     </div>
-                )}
-
-                <p className="text-xs text-center text-gray-400 mb-3">- OR -</p>
-
-                <div className="flex gap-2">
                     <button 
-                      onClick={copySplitLink}
-                      className="flex-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg py-2 px-3 text-sm text-midnight dark:text-white flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                        onClick={() => setIsSplit(!isSplit)}
+                        role="switch"
+                        aria-checked={isSplit}
+                        className={`w-12 h-7 rounded-full p-1 cursor-pointer transition-colors duration-300 outline-none focus-visible:ring-2 focus-visible:ring-electric ${isSplit ? 'bg-electric' : 'bg-gray-300 dark:bg-gray-600'}`}
                     >
-                      {splitLinkCopied ? <Check size={16} className="text-green-500" /> : <Link size={16} />}
-                      {splitLinkCopied ? 'Link Copied' : 'Copy Split Link'}
+                        <div className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-300 ${isSplit ? 'translate-x-5 scale-110' : ''}`} />
                     </button>
                 </div>
             </div>
         )}
+
+        {/* User Search & List (Shown if Split OR Loser Pays is active) */}
+        {(isSplit || isLoserPays) && (
+            <div className={`mt-2 p-4 rounded-xl border-2 ${isLoserPays ? 'border-red-200 bg-red-50 dark:bg-red-900/10 dark:border-red-900/30' : 'border-gray-100 bg-white dark:bg-gray-800 dark:border-gray-700'} animate-fade-in-up`}>
+                <div className="mb-3">
+                    <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${isLoserPays ? 'text-red-500' : 'text-gray-500'}`}>
+                        {isLoserPays ? '⚔️ Who is playing?' : 'Add Friends to Split'}
+                    </h4>
+                    <div className="flex gap-2">
+                        <input 
+                        type="text" 
+                        placeholder={isLoserPays ? "Enter opponent username" : "Enter friend username"}
+                        value={newSplitUser}
+                        onChange={(e) => setNewSplitUser(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && addSplitUser()}
+                        disabled={isSearchingUser}
+                        className={`flex-1 px-3 py-2 border rounded-lg text-sm dark:bg-gray-700 dark:text-white outline-none disabled:opacity-70 ${isLoserPays ? 'border-red-200 focus:ring-red-500' : 'border-gray-200 focus:ring-electric'}`}
+                        />
+                        <button onClick={addSplitUser} className={`${isLoserPays ? 'bg-red-500 hover:bg-red-600' : 'bg-electric hover:bg-blue-600'} text-white p-2 rounded-lg transition-colors`}>
+                        {isSearchingUser ? <Loader2 size={18} className="animate-spin"/> : <Plus size={18} />}
+                        </button>
+                    </div>
+                </div>
+                
+                {splitUsers.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                    {splitUsers.map((user, idx) => (
+                        <div key={idx} className="flex items-center text-xs font-bold bg-white dark:bg-gray-700 pr-2 pl-1 py-1 rounded-full border border-gray-200 dark:border-gray-600 shadow-sm text-midnight dark:text-white animate-scale-in">
+                        {user.avatar ? <img src={user.avatar} className="w-5 h-5 rounded-full mr-2" /> : <div className="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-600 mr-2 flex items-center justify-center text-[8px]">{user.name.charAt(0).toUpperCase()}</div>}
+                        <span className="mr-2">{user.name}</span>
+                        <button onClick={() => setSplitUsers(splitUsers.filter((_, i) => i !== idx))} className="text-gray-400 hover:text-red-500"><X size={12} /></button>
+                        </div>
+                    ))}
+                    </div>
+                ) : isLoserPays && (
+                    <p className="text-xs text-red-400 font-medium italic flex items-center gap-1">
+                        <AlertCircle size={12} /> You must add at least one opponent.
+                    </p>
+                )}
+            </div>
+        )}
       </div>
     </div>
-  );
-
-  const renderStep4 = () => (
-     <div className="space-y-6 animate-fade-in-up text-center">
-         <div className="bg-offwhite dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700">
-             <div className="flex justify-center mb-4">
-               <Logo size={40} showWordmark={false} />
-             </div>
-             <h4 className="text-courtgray dark:text-gray-400 text-sm uppercase tracking-wider mb-2">Total Amount</h4>
-             <h1 className="text-5xl font-display font-black text-midnight dark:text-white">₹{totalCost}</h1>
-             
-             {isSplit && splitUsers.length > 0 && (
-                 <div className="mt-4 flex flex-col items-center gap-2">
-                     <div className="inline-flex items-center gap-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full text-xs font-bold">
-                        <Users size={12} aria-hidden="true" /> ₹{perPersonCost} / person
-                     </div>
-                     <div className="flex -space-x-2 mt-1">
-                         <div className="w-6 h-6 rounded-full bg-gray-300 border-2 border-white dark:border-gray-800 flex items-center justify-center text-[8px] font-bold">YOU</div>
-                         {splitUsers.slice(0, 4).map((u, i) => (
-                             <img key={i} src={u.avatar || `https://ui-avatars.com/api/?name=${u.name}&background=random`} className="w-6 h-6 rounded-full border-2 border-white dark:border-gray-800" alt={u.name}/>
-                         ))}
-                         {splitUsers.length > 4 && (
-                             <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 border-2 border-white dark:border-gray-800 flex items-center justify-center text-[8px] font-bold">+{splitUsers.length - 4}</div>
-                         )}
-                     </div>
-                 </div>
-             )}
-
-             <div className="mt-8 space-y-3">
-                 <div className="flex justify-between text-sm">
-                    <span className="text-courtgray">Turf Fee</span>
-                    <span className="font-bold text-midnight dark:text-white">₹{basePrice}</span>
-                 </div>
-                 {equipmentCost > 0 && (
-                    <div className="flex justify-between text-sm">
-                        <span className="text-courtgray">Equipment</span>
-                        <span className="font-bold text-midnight dark:text-white">+₹{equipmentCost}</span>
-                    </div>
-                 )}
-                 {addOnCost > 0 && (
-                    <div className="flex justify-between text-sm">
-                        <span className="text-courtgray">Staff</span>
-                        <span className="font-bold text-midnight dark:text-white">+₹{addOnCost}</span>
-                    </div>
-                 )}
-             </div>
-         </div>
-
-         <div className="flex flex-col gap-2 text-sm text-courtgray">
-             <p>{turf.name} • {selectedSport}</p>
-             <p>{new Date(date).toLocaleDateString()} • {selectedSlot}</p>
-         </div>
-     </div>
   );
 
   return (
@@ -447,7 +431,25 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
             {step === 1 && renderStep1()}
             {step === 2 && renderStep2()}
             {step === 3 && renderStep3()}
-            {step === 4 && renderStep4()}
+            {step === 4 && <PaymentReceipt 
+              turf={turf}
+              date={date}
+              slot={selectedSlot}
+              sport={selectedSport}
+              basePrice={basePrice}
+              equipmentCost={equipmentCost}
+              addOnCost={addOnCost}
+              totalCost={totalCost}
+              perPersonCost={perPersonCost}
+              isSplit={isSplit || isLoserPays} // Loser Pays implies a split view in receipt
+              splitUsers={splitUsers}
+              couponCode={couponCode}
+              setCouponCode={setCouponCode}
+              appliedCoupon={appliedCoupon}
+              setAppliedCoupon={setAppliedCoupon}
+              handleApplyCoupon={handleApplyCoupon}
+              paymentMode={paymentMode}
+            />}
         </div>
 
         {/* Footer Actions */}
@@ -463,9 +465,10 @@ const BookingModal: React.FC<BookingModalProps> = ({ turf, existingBookings, onC
              ) : (
                  <button 
                     onClick={handleConfirm}
-                    className={`w-full text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-xl hover:scale-[1.02] active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-electric min-h-[48px] ${isSelectedSlotBooked ? 'bg-orange-500 shadow-orange-500/30' : 'bg-electric shadow-blue-500/30'}`}
+                    disabled={isLoserPays && splitUsers.length === 0}
+                    className={`w-full text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-xl hover:scale-[1.02] active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-electric min-h-[48px] disabled:opacity-50 disabled:scale-100 ${isSelectedSlotBooked ? 'bg-orange-500 shadow-orange-500/30' : isLoserPays ? 'bg-red-600 shadow-red-600/30' : 'bg-electric shadow-blue-500/30'}`}
                  >
-                    {isSelectedSlotBooked ? 'Join Waitlist' : `Pay ₹${perPersonCost}`}
+                    {isSelectedSlotBooked ? 'Join Waitlist' : isLoserPays ? `Confirm Wager` : `Pay ₹${perPersonCost}`}
                  </button>
              )}
         </div>

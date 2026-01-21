@@ -35,3 +35,25 @@ export const formatCurrency = (amount: number) => {
     maximumFractionDigits: 0
   }).format(amount);
 };
+
+// Notification Helpers
+export const requestNotificationPermission = async () => {
+  if (typeof window === 'undefined' || !("Notification" in window)) return false;
+  if (Notification.permission === "granted") return true;
+  if (Notification.permission !== "denied") {
+    const permission = await Notification.requestPermission();
+    return permission === "granted";
+  }
+  return false;
+};
+
+export const sendBrowserNotification = (title: string, body: string) => {
+  if (typeof window !== 'undefined' && "Notification" in window && Notification.permission === "granted") {
+    // Check if we are in a service worker context or just main thread
+    try {
+        new Notification(title, { body, icon: 'https://cdn-icons-png.flaticon.com/512/3233/3233497.png' }); // Generic sports icon
+    } catch (e) {
+        console.error("Notification failed", e);
+    }
+  }
+};

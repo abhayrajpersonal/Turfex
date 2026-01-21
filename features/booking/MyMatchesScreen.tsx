@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Calendar, QrCode, Clock, History } from 'lucide-react';
+import { Calendar, QrCode, Clock, History, Megaphone, ThumbsUp, Skull } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
@@ -81,11 +81,21 @@ const MyMatchesScreen: React.FC = () => {
                     {filteredBookings.map(booking => (
                     <div key={booking.id} className={`bg-white dark:bg-darkcard p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:border-blue-200 dark:hover:border-blue-800 ${activeMatchTab === 'history' ? 'opacity-80 grayscale-[0.5]' : ''}`}>
                         <div className="flex items-center gap-4">
-                            <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl ${activeMatchTab === 'history' ? 'bg-gray-100 dark:bg-gray-800' : 'bg-blue-50 dark:bg-blue-900/20'}`}>
+                            <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl relative ${activeMatchTab === 'history' ? 'bg-gray-100 dark:bg-gray-800' : 'bg-blue-50 dark:bg-blue-900/20'}`}>
                                 {SPORTS_ICONS[booking.sport]}
+                                {booking.payment_mode === 'LOSER_PAYS' && (
+                                    <div className="absolute -top-2 -right-2 bg-red-600 text-white p-1 rounded-full border-2 border-white dark:border-darkcard" title="Loser Pays Mode">
+                                        <Skull size={10} />
+                                    </div>
+                                )}
                             </div>
                             <div>
-                            <h4 className="font-bold text-midnight dark:text-white text-lg">{booking.turf?.name || 'Walk-in'}</h4>
+                            <h4 className="font-bold text-midnight dark:text-white text-lg flex items-center gap-2">
+                                {booking.turf?.name || 'Walk-in'}
+                                {booking.payment_mode === 'LOSER_PAYS' && (
+                                    <span className="text-[10px] bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded border border-red-200 dark:border-red-800 uppercase font-black tracking-wider">Loser Pays</span>
+                                )}
+                            </h4>
                             <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
                                 <Calendar size={12}/> {new Date(booking.start_time).toLocaleDateString()} 
                                 <span className="mx-1">•</span> 
@@ -96,8 +106,11 @@ const MyMatchesScreen: React.FC = () => {
                         <div className="flex flex-wrap items-center justify-between md:justify-end gap-3 w-full md:w-auto border-t md:border-t-0 border-gray-100 dark:border-gray-800 pt-3 md:pt-0">
                             {activeMatchTab === 'upcoming' && booking.status === 'CONFIRMED' && (
                                 <>
+                                    <button onClick={() => setActiveModal('ringer')} className="text-xs flex items-center gap-1 font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/20 px-3 py-2 rounded-lg transition-colors">
+                                        <Megaphone size={14} /> Need Sub?
+                                    </button>
                                     <button onClick={() => setActiveModal('qr', booking)} className="text-xs flex items-center gap-1 font-bold text-midnight dark:text-white bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
-                                        <QrCode size={14} /> Entry Pass
+                                        <QrCode size={14} /> Pass
                                     </button>
                                     <button onClick={() => cancelBooking(booking.id)} className="text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 font-bold px-3 py-2 rounded-lg transition-colors">
                                         Cancel
@@ -105,9 +118,14 @@ const MyMatchesScreen: React.FC = () => {
                                 </>
                             )}
                             {activeMatchTab === 'history' && booking.status === 'CONFIRMED' && (
-                                <button onClick={() => setActiveModal('review', booking)} className="text-xs flex items-center gap-1 text-electric border border-electric/30 px-4 py-2 rounded-lg font-bold hover:bg-blue-50 dark:hover:bg-blue-900/20">
-                                    Rate & Review
-                                </button>
+                                <>
+                                    <button onClick={() => setActiveModal('endorsement')} className="text-xs flex items-center gap-1 text-electric border border-electric/30 px-3 py-2 rounded-lg font-bold hover:bg-blue-50 dark:hover:bg-blue-900/20">
+                                        <ThumbsUp size={14} /> Endorse Teammates
+                                    </button>
+                                    <button onClick={() => setActiveModal('review', booking)} className="text-xs flex items-center gap-1 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 px-3 py-2 rounded-lg font-bold hover:bg-gray-50 dark:hover:bg-gray-800">
+                                        Rate
+                                    </button>
+                                </>
                             )}
                             {booking.status === 'CANCELLED' && (
                                 <span className="text-xs px-3 py-1 bg-red-100 dark:bg-red-900/20 text-red-600 rounded-lg font-bold">Cancelled</span>

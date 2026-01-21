@@ -1,8 +1,22 @@
 
 import { Sport } from './types';
 
-export const SUPABASE_URL = process.env.SUPABASE_URL || 'https://xyz.supabase.co';
-export const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'abc';
+// Safely access process.env to prevent "Uncaught ReferenceError: process is not defined"
+const getEnv = (key: string, fallback: string) => {
+  try {
+    // @ts-ignore
+    if (typeof process !== 'undefined' && process.env) {
+      // @ts-ignore
+      return process.env[key] || fallback;
+    }
+  } catch (e) {
+    // Ignore error
+  }
+  return fallback;
+};
+
+export const SUPABASE_URL = getEnv('SUPABASE_URL', 'https://xyz.supabase.co');
+export const SUPABASE_ANON_KEY = getEnv('SUPABASE_ANON_KEY', 'abc');
 
 export const COLORS = {
   electric: '#007BFF',

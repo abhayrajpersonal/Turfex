@@ -26,10 +26,8 @@ export interface FootballScore {
 }
 
 export interface RacquetScore {
-  set_1: [number, number];
-  set_2: [number, number];
-  set_3: [number, number];
-  current_game: [number, number];
+  sets: { a: number; b: number }[];
+  current_set: number;
   server: 'A' | 'B';
 }
 

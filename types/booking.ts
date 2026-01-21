@@ -38,7 +38,7 @@ export interface Booking {
   price: number;
   status: 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | 'PENDING_PAYMENT' | 'MAINTENANCE';
   turf?: Turf; 
-  payment_mode: 'FULL' | 'SPLIT' | 'WALLET' | 'OFFLINE';
+  payment_mode: 'FULL' | 'SPLIT' | 'WALLET' | 'OFFLINE' | 'LOSER_PAYS';
   split_with?: string[];
   is_recurring: boolean;
   rental_items?: string[];

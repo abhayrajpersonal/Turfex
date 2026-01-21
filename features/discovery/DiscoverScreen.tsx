@@ -1,14 +1,20 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { Search, Map, List, Filter } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useUI } from '../../context/UIContext';
 import { useAuth } from '../../context/AuthContext';
 import { Sport, FriendActivity, OpenMatch } from '../../lib/types';
 import { MOCK_FRIENDS_ACTIVITY, MOCK_COACHES } from '../../lib/mockData';
-import MapComponent from '../../components/common/MapComponent';
 import AIRecommendationBanner from '../../components/AIRecommendationBanner';
 import { debounce } from '../../lib/utils';
+
+// Dynamically import MapComponent to disable SSR for Leaflet
+const MapComponent = dynamic(() => import('../../components/common/MapComponent'), {
+  ssr: false,
+  loading: () => <div className="w-full h-full bg-zinc-900 animate-pulse flex items-center justify-center text-zinc-500">Loading Map...</div>
+});
 
 // Refactored Components
 import DiscoverFilters from './components/DiscoverFilters';

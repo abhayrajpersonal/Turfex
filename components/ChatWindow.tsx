@@ -70,27 +70,29 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ isOpen, onClose, user }) => {
         })
       });
 
-      if (!res.ok) throw new Error('API request failed');
-      
-      const data = await res.json();
-      const aiText = data.text || "I'm having trouble checking the rulebook right now.";
+      let aiText;
+      if (res.ok) {
+          const data = await res.json();
+          aiText = data.text;
+      } else {
+          // Robust Fallback if API fails (e.g., 404 in static build or 500)
+          console.warn("AI API unreachable, using fallback");
+          aiText = "I'm having trouble connecting to the rulebook server. But generally, the referee's decision is final! 😅";
+      }
 
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         sender: 'coach',
-        text: aiText,
+        text: aiText || "Could not generate response.",
         timestamp: new Date()
       }]);
 
     } catch (error) {
       console.error("AI Error:", error);
-      // Fallback for when API route is not available (Client-side only mode)
-      const errorMessage = "I couldn't reach the server. (If you are running locally without the backend, AI features may be limited).";
-      
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         sender: 'coach',
-        text: errorMessage,
+        text: "My connection is weak. Please check your internet or try again later.",
         timestamp: new Date()
       }]);
     } finally {

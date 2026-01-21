@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { User, Calendar, Trophy, MapPin, Briefcase, Moon, Sun, Crown, Bell, Gamepad2, ShoppingBag, LogOut, Gift } from 'lucide-react';
+import { User, Calendar, Trophy, MapPin, Briefcase, Moon, Sun, Crown, Bell, Gamepad2, ShoppingBag, LogOut, Gift, Settings } from 'lucide-react';
 import { UserProfile, UserType, UserTier } from '../../lib/types';
 import Logo from '../common/Logo';
 import { useUI } from '../../context/UIContext';
@@ -15,7 +15,7 @@ interface SidebarProps {
   notificationCount: number;
   onOpenNotifications: () => void;
   isDarkMode: boolean;
-  setIsDarkMode: (val: boolean) => void;
+  toggleTheme: () => void;
   bellShake: boolean;
 }
 
@@ -38,7 +38,7 @@ const NavItem = ({ id, icon: Icon, label, activeTab, setActiveTab }: { id: strin
 
 const Sidebar: React.FC<SidebarProps> = ({ 
   user, activeTab, setActiveTab, onLogout, onUpgrade, 
-  notificationCount, onOpenNotifications, isDarkMode, setIsDarkMode, bellShake 
+  notificationCount, onOpenNotifications, isDarkMode, toggleTheme, bellShake 
 }) => {
   const { setActiveModal } = useUI();
   const { language, setLanguage, t } = useLanguage();
@@ -94,7 +94,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                      {language}
                  </button>
                  <button
-                    onClick={() => setIsDarkMode(!isDarkMode)}
+                    onClick={toggleTheme}
                     className="p-2 hover:bg-gray-200 dark:hover:bg-zinc-800 rounded-lg text-gray-500 dark:text-zinc-400 hover:text-midnight dark:hover:text-white transition-colors"
                  >
                      {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
@@ -102,7 +102,7 @@ const Sidebar: React.FC<SidebarProps> = ({
              </div>
            </div>
            
-          <div className="flex items-center gap-4 mb-4 cursor-pointer group">
+          <div className="flex items-center gap-4 mb-4 cursor-pointer group" onClick={() => setActiveTab('social')}>
              <div className="relative">
                 <img src={user?.avatar_url || "https://picsum.photos/40"} alt="" className="w-10 h-10 object-cover grayscale group-hover:grayscale-0 transition-all border border-gray-300 dark:border-zinc-700 rounded-full" />
                 {user?.tier === UserTier.GOLD && <div className="absolute -top-1 -right-1 bg-volt text-black p-0.5 rounded-full"><Crown size={8} fill="currentColor"/></div>}
@@ -112,6 +112,15 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <p className="text-xs text-gray-500 dark:text-zinc-500 truncate font-mono">@{user?.username}</p>
              </div>
           </div>
+          
+          <button 
+            onClick={() => setActiveTab('settings')}
+            className="flex items-center space-x-2 text-xs font-bold text-zinc-500 hover:text-midnight dark:hover:text-white transition-colors uppercase tracking-wider mb-3"
+          >
+            <Settings size={14} />
+            <span>Settings</span>
+          </button>
+
           <button 
             onClick={onLogout}
             className="flex items-center space-x-2 text-xs font-bold text-zinc-500 hover:text-red-500 transition-colors uppercase tracking-wider"

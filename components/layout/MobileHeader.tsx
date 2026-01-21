@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Menu, X, Moon, Sun, Bell, MapPin, Calendar, Trophy, Briefcase, LogOut, User, Gamepad2, ShoppingBag } from 'lucide-react';
+import { Menu, X, Moon, Sun, Bell, MapPin, Calendar, Trophy, Briefcase, LogOut, User, Gamepad2, ShoppingBag, Settings } from 'lucide-react';
 import { UserProfile, UserType } from '../../lib/types';
 import Logo from '../common/Logo';
 
@@ -9,7 +9,7 @@ interface MobileHeaderProps {
   toggleMenu: () => void;
   isMenuOpen: boolean;
   isDarkMode: boolean;
-  setIsDarkMode: (val: boolean) => void;
+  toggleTheme: () => void;
   notificationCount: number;
   onOpenNotifications: () => void;
   bellShake: boolean;
@@ -36,7 +36,7 @@ const NavItem = ({ id, icon: Icon, label, activeTab, setActiveTab, onClick }: an
 );
 
 const MobileHeader: React.FC<MobileHeaderProps> = ({ 
-  user, toggleMenu, isMenuOpen, isDarkMode, setIsDarkMode, 
+  user, toggleMenu, isMenuOpen, isDarkMode, toggleTheme, 
   notificationCount, onOpenNotifications, bellShake,
   activeTab, setActiveTab, onLogout
 }) => {
@@ -63,7 +63,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
 
       {isMenuOpen && (
         <div className="md:hidden fixed inset-0 bg-white dark:bg-black z-[45] pt-24 px-0 animate-fade-in-up flex flex-col">
-           <nav className="space-y-1 flex-1">
+           <nav className="space-y-1 flex-1 overflow-y-auto">
             <NavItem id="discover" icon={MapPin} label="Discover" activeTab={activeTab} setActiveTab={setActiveTab} onClick={toggleMenu} />
             <NavItem id="matches" icon={Calendar} label="Matches" activeTab={activeTab} setActiveTab={setActiveTab} onClick={toggleMenu} />
             <NavItem id="scoreboard" icon={Gamepad2} label="Scoreboard" activeTab={activeTab} setActiveTab={setActiveTab} onClick={toggleMenu} />
@@ -73,11 +73,13 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
             {(user?.user_type === UserType.OWNER || user?.user_type === UserType.MANAGER) && (
                <NavItem id="dashboard" icon={Briefcase} label="Dashboard" activeTab={activeTab} setActiveTab={setActiveTab} onClick={toggleMenu} />
             )}
+            <div className="h-px bg-gray-100 dark:bg-zinc-800 my-2 mx-4"></div>
+            <NavItem id="settings" icon={Settings} label="Settings" activeTab={activeTab} setActiveTab={setActiveTab} onClick={toggleMenu} />
           </nav>
           
-          <div className="p-6 border-t border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-zinc-900 flex justify-between items-center">
+          <div className="p-6 border-t border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-zinc-900 flex justify-between items-center shrink-0">
                <button 
-                 onClick={() => setIsDarkMode(!isDarkMode)}
+                 onClick={toggleTheme}
                  className="flex items-center gap-2 text-sm font-bold text-midnight dark:text-white uppercase tracking-wider bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 px-4 py-3 rounded-lg shadow-sm"
                >
                   {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}

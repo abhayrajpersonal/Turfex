@@ -1,8 +1,9 @@
 
 import React from 'react';
-import { Crown, Wallet, BadgeCheck, Flame, Edit3 } from 'lucide-react';
+import { Crown, Wallet, BadgeCheck, Flame, Edit3, Settings } from 'lucide-react';
 import { UserProfile, UserTier } from '../../../lib/types';
 import CountUp from '../../../components/common/CountUp';
+import { useUI } from '../../../context/UIContext';
 
 interface ProfileHeaderProps {
   user: UserProfile;
@@ -16,6 +17,8 @@ interface ProfileHeaderProps {
 const ProfileHeader: React.FC<ProfileHeaderProps> = ({ 
   user, onOpenWallet, onEditProfile, nextTier, pointsRequired, progressPercent 
 }) => {
+  const { setActiveTab } = useUI();
+
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 border border-gray-200 dark:border-zinc-800 shadow-sm relative overflow-hidden group">
        {/* Background Pattern */}
@@ -55,12 +58,21 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                   <p className="text-gray-500 dark:text-zinc-400 font-mono text-xs">@{user?.username} • {user?.city}</p>
                 </div>
                 
-                <button 
-                    onClick={onOpenWallet}
-                    className="bg-zinc-100 dark:bg-black border border-gray-200 dark:border-zinc-700 text-midnight dark:text-white px-4 py-2 rounded-lg text-xs font-bold hover:border-volt hover:text-volt transition-all flex items-center justify-center gap-2 self-center md:self-start"
-                >
-                    <Wallet size={16} /> ₹{user?.wallet_balance.toLocaleString()}
-                </button>
+                <div className="flex items-center gap-2 self-center md:self-start">
+                    <button 
+                        onClick={onOpenWallet}
+                        className="bg-zinc-100 dark:bg-black border border-gray-200 dark:border-zinc-700 text-midnight dark:text-white px-4 py-2 rounded-lg text-xs font-bold hover:border-volt hover:text-volt transition-all flex items-center justify-center gap-2"
+                    >
+                        <Wallet size={16} /> ₹{user?.wallet_balance.toLocaleString()}
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('settings')}
+                        className="bg-zinc-100 dark:bg-black border border-gray-200 dark:border-zinc-700 text-gray-500 hover:text-midnight dark:hover:text-white px-3 py-2 rounded-lg transition-all"
+                        aria-label="Settings"
+                    >
+                        <Settings size={16} />
+                    </button>
+                </div>
              </div>
 
              {/* Stats Row */}

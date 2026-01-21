@@ -1,0 +1,47 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-size: 16px;
+}
+
+body {
+  background-color: #000000;
+  color: #FFFFFF;
+  -webkit-tap-highlight-color: transparent;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: #09090B; }
+::-webkit-scrollbar-thumb { background: #27272A; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #DFFF00; }
+
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Sharp Focus States */
+:focus-visible { outline: 2px solid #DFFF00; outline-offset: 2px; }
+
+/* Leaflet Overrides for Dark Mode */
+.leaflet-popup-content-wrapper { 
+  border-radius: 0; 
+  padding: 0; 
+  overflow: hidden;
+  background: #18181B; 
+  color: white;
+  border: 1px solid #333;
+}
+.leaflet-popup-tip { background: #18181B; }
+.leaflet-container { font-family: 'Inter', sans-serif; }
+
+/* Leaflet Icon fix for Next.js Image handling */
+.leaflet-div-icon {
+  background: transparent;
+  border: none;
+}

@@ -4,6 +4,7 @@ import { UserProfile } from '../../lib/types';
 import Sidebar from './Sidebar';
 import MobileHeader from './MobileHeader';
 import MobileNav from './MobileNav';
+import { useUI } from '../../context/UIContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -18,18 +19,8 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activeTab, setActiveTab, onUpgrade, notificationCount = 0, onOpenNotifications }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-  // Default to Dark Mode for the brand identity
-  const [isDarkMode, setIsDarkMode] = React.useState(true);
+  const { isDarkMode, toggleTheme } = useUI();
   const [bellShake, setBellShake] = useState(false);
-
-  useEffect(() => {
-    // Dynamically update the html class
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [isDarkMode]);
 
   useEffect(() => {
       if (notificationCount > 0) {
@@ -49,7 +40,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activeTab, se
         toggleMenu={toggleMenu}
         isMenuOpen={isMenuOpen}
         isDarkMode={isDarkMode}
-        setIsDarkMode={setIsDarkMode}
+        toggleTheme={toggleTheme}
         notificationCount={notificationCount}
         onOpenNotifications={onOpenNotifications || (() => {})}
         bellShake={bellShake}
@@ -67,7 +58,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activeTab, se
         notificationCount={notificationCount}
         onOpenNotifications={onOpenNotifications || (() => {})}
         isDarkMode={isDarkMode}
-        setIsDarkMode={setIsDarkMode}
+        toggleTheme={toggleTheme}
         bellShake={bellShake}
       />
 

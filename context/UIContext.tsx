@@ -17,6 +17,8 @@ interface UIContextType {
   setIsNotificationPanelOpen: (isOpen: boolean) => void;
   showConfetti: boolean;
   triggerConfetti: () => void;
+  isDarkMode: boolean;
+  toggleTheme: () => void;
 }
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
@@ -38,6 +40,9 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  
+  // Theme State
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   // Sync Tab changes to URL
   const setActiveTab = (tab: string) => {
@@ -75,6 +80,17 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
       return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  // Theme Effect
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
+
+  const toggleTheme = () => setIsDarkMode(!isDarkMode);
+
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
   };
@@ -97,7 +113,9 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
       isNotificationPanelOpen,
       setIsNotificationPanelOpen,
       showConfetti,
-      triggerConfetti
+      triggerConfetti,
+      isDarkMode,
+      toggleTheme
     }}>
       {children}
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}

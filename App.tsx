@@ -16,6 +16,7 @@ import SocialScreen from './features/social/SocialScreen';
 import DashboardScreen from './features/dashboard/DashboardScreen';
 import ScoreboardScreen from './features/scoreboard/ScoreboardScreen';
 import MerchScreen from './features/merch/MerchScreen';
+import SettingsScreen from './features/settings/SettingsScreen';
 
 // Providers
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -55,6 +56,7 @@ const TurfexApp = () => {
       case 'merch': return <MerchScreen />;
       case 'social': return <SocialScreen />;
       case 'leaderboard': return <LeaderboardScreen />;
+      case 'settings': return <SettingsScreen />;
       case 'dashboard': 
         return (user.user_type === UserType.OWNER || user.user_type === UserType.MANAGER) ? <DashboardScreen /> : <DiscoverScreen />;
       default: return <DiscoverScreen />;

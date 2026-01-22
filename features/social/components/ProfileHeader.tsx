@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Crown, Wallet, BadgeCheck, Flame, Edit3, Settings } from 'lucide-react';
+import { Crown, Wallet, BadgeCheck, Flame, Edit3, Settings, Users } from 'lucide-react';
 import { UserProfile, UserTier } from '../../../lib/types';
 import CountUp from '../../../components/common/CountUp';
 import { useUI } from '../../../context/UIContext';
@@ -17,7 +17,7 @@ interface ProfileHeaderProps {
 const ProfileHeader: React.FC<ProfileHeaderProps> = ({ 
   user, onOpenWallet, onEditProfile, nextTier, pointsRequired, progressPercent 
 }) => {
-  const { setActiveTab } = useUI();
+  const { setActiveTab, setActiveModal } = useUI();
 
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 border border-gray-200 dark:border-zinc-800 shadow-sm relative overflow-hidden group">
@@ -59,6 +59,13 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 </div>
                 
                 <div className="flex items-center gap-2 self-center md:self-start">
+                    <button 
+                        onClick={() => setActiveModal('friends')}
+                        className="bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-midnight dark:text-white px-3 py-2 rounded-lg hover:border-blue-500 hover:text-blue-500 transition-all flex items-center gap-1"
+                        title="Friends"
+                    >
+                        <Users size={16} />
+                    </button>
                     <button 
                         onClick={onOpenWallet}
                         className="bg-zinc-100 dark:bg-black border border-gray-200 dark:border-zinc-700 text-midnight dark:text-white px-4 py-2 rounded-lg text-xs font-bold hover:border-volt hover:text-volt transition-all flex items-center justify-center gap-2"

@@ -53,41 +53,41 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [bids, setBids] = useState<Bid[]>([]);
 
+  const fetchData = async () => {
+      if (isSupabaseConfigured()) {
+          const [turfRes, bRes, mRes, tRes] = await Promise.all([
+              api.data.getTurfs(),
+              api.data.getBookings(user?.id),
+              api.data.getOpenMatches(),
+              api.data.getTeams()
+          ]);
+          
+          if (turfRes.data) setTurfs(turfRes.data as any);
+          if (bRes.data) setBookings(bRes.data as any);
+          if (mRes.data) setOpenMatches(mRes.data as any);
+          if (tRes.data) setTeams(tRes.data as any);
+          
+          // Mock data for things not yet in DB
+          setTournaments(MOCK_TOURNAMENTS);
+          setActivities(MOCK_ACTIVITIES);
+          
+          // Fetch real notifications if table existed, otherwise mock
+          setNotifications(MOCK_NOTIFICATIONS);
+      } else {
+          // Fallback to Mock / LocalStorage
+          const storedBookings = window.localStorage.getItem('turfex_bookings');
+          setBookings(storedBookings ? JSON.parse(storedBookings) : []);
+          setTurfs(MOCK_TURFS);
+          setOpenMatches(MOCK_OPEN_MATCHES);
+          setTeams(MOCK_TEAMS);
+          setTournaments(MOCK_TOURNAMENTS);
+          setNotifications(MOCK_NOTIFICATIONS);
+          setActivities(MOCK_ACTIVITIES);
+      }
+  };
+
   // Initial Load & Realtime Setup
   useEffect(() => {
-    const fetchData = async () => {
-        if (isSupabaseConfigured()) {
-            const [turfRes, bRes, mRes, tRes] = await Promise.all([
-                api.data.getTurfs(),
-                api.data.getBookings(user?.id),
-                api.data.getOpenMatches(),
-                api.data.getTeams()
-            ]);
-            
-            if (turfRes.data) setTurfs(turfRes.data as any);
-            if (bRes.data) setBookings(bRes.data as any);
-            if (mRes.data) setOpenMatches(mRes.data as any);
-            if (tRes.data) setTeams(tRes.data as any);
-            
-            // Mock data for things not yet in DB
-            setTournaments(MOCK_TOURNAMENTS);
-            setActivities(MOCK_ACTIVITIES);
-            
-            // Fetch real notifications if table existed, otherwise mock
-            setNotifications(MOCK_NOTIFICATIONS);
-        } else {
-            // Fallback to Mock / LocalStorage
-            const storedBookings = window.localStorage.getItem('turfex_bookings');
-            setBookings(storedBookings ? JSON.parse(storedBookings) : []);
-            setTurfs(MOCK_TURFS);
-            setOpenMatches(MOCK_OPEN_MATCHES);
-            setTeams(MOCK_TEAMS);
-            setTournaments(MOCK_TOURNAMENTS);
-            setNotifications(MOCK_NOTIFICATIONS);
-            setActivities(MOCK_ACTIVITIES);
-        }
-    };
-
     fetchData();
 
     // Realtime Subscriptions
@@ -123,7 +123,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [user]);
 
   const refreshData = async () => {
-      // Manual refresh logic if needed
+      await fetchData();
   };
 
   // Actions

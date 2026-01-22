@@ -76,7 +76,7 @@ const AIRecommendationBanner: React.FC<AIRecommendationBannerProps> = ({ user })
                  AI Insight {loading && <span className="w-1 h-1 bg-volt rounded-full animate-ping"/>}
               </h3>
               <p className="text-lg md:text-xl font-display font-bold text-white leading-tight max-w-xl">
-                 {loading ? "Analyzing your playstyle..." : suggestion}
+                 {loading ? "Loading..." : suggestion}
               </p>
            </div>
         </div>

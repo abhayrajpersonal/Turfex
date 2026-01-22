@@ -67,6 +67,7 @@ const SocialScreen: React.FC = () => {
       <MyTeamsList 
         teams={myTeams} 
         onCreateTeam={() => setActiveModal('create_team')}
+        onTeamClick={(team) => setActiveModal('team_details', team)}
       />
     </div>
   );

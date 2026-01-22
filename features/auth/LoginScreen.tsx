@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Loader2, AlertCircle, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
@@ -16,41 +16,70 @@ const LoginScreen: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // If user is already logged in, show redirecting state immediately
+  // This prevents the form from resetting (flashing back to phone input) while the parent App component is updating
+  if (user) {
+      return (
+          <div className="min-h-screen flex items-center justify-center bg-black text-white">
+              <div className="text-center">
+                  <Loader2 className="animate-spin text-volt mx-auto mb-4" size={48} />
+                  <h2 className="text-xl font-display font-bold uppercase tracking-wider">Entering Arena...</h2>
+              </div>
+          </div>
+      );
+  }
+
   const validatePhone = (phone: string) => {
-    const regex = /^[6-9]\d{9}$/; 
+    const regex = /^\d{10}$/; 
     return regex.test(phone);
   };
 
   const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault(); // Critical: prevent page reload
     setError(null);
+    
     if (!validatePhone(phoneNumber)) {
         setError("Enter valid 10-digit mobile number.");
         return;
     }
+    
     setIsSubmitting(true);
-    await login(phoneNumber);
-    setIsSubmitting(false);
-    setShowOtpInput(true);
+    try {
+        await login(phoneNumber);
+        setShowOtpInput(true);
+    } catch (err) {
+        setError("Failed to send OTP. Try again.");
+    } finally {
+        setIsSubmitting(false);
+    }
   };
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
-      e.preventDefault();
+      e.preventDefault(); // Critical: prevent page reload
       setError(null);
+      
       if (otp.length !== 4 && otp.length !== 6) {
           setError("Invalid OTP length.");
           return;
       }
-      setIsSubmitting(true);
-      const success = await verifyOtp(phoneNumber, otp);
-      setIsSubmitting(false);
       
-      if (!success) {
-          setError("Invalid OTP. Try again.");
+      setIsSubmitting(true);
+      try {
+          const success = await verifyOtp(phoneNumber, otp);
+          if (!success) {
+              setError("Invalid OTP. Try again.");
+              setIsSubmitting(false);
+          }
+          // If success, the 'user' state will update, triggering the component to render the "Entering Arena..." view above
+          // We do NOT set isSubmitting(false) here to prevent the form from becoming interactive again during the transition
+      } catch (e) {
+          setError("Verification failed.");
+          setIsSubmitting(false);
       }
   };
 
-  React.useEffect(() => {
+  // Effect to handle navigation after successful login
+  useEffect(() => {
     if (user) {
         showToast("Welcome to the Arena.", 'success');
         if (user.user_type === UserType.OWNER || user.user_type === UserType.MANAGER) {
@@ -108,7 +137,7 @@ const LoginScreen: React.FC = () => {
                     autoFocus
                   />
                 </div>
-                <p className="text-[10px] text-zinc-600 mt-2 font-mono">Demo: End with '9' for Owner.</p>
+                <p className="text-[10px] text-zinc-600 mt-2 font-mono">Demo: End with '9' for Owner Mode.</p>
               </div>
               
               {error && <div className="flex items-center gap-2 text-red-500 text-xs font-bold bg-red-900/10 p-3 border border-red-900/30"><AlertCircle size={14} />{error}</div>}
@@ -124,7 +153,10 @@ const LoginScreen: React.FC = () => {
           ) : (
             <form onSubmit={handleVerifyOtp} className="space-y-6">
               <div>
-                <label className="block text-[10px] font-bold text-volt uppercase tracking-wider mb-2">One-Time Password</label>
+                <div className="flex justify-between items-center mb-2">
+                    <label className="block text-[10px] font-bold text-volt uppercase tracking-wider">One-Time Password</label>
+                    <span className="text-[10px] text-zinc-500 font-mono">Sent to {phoneNumber}</span>
+                </div>
                 <input
                   type="text"
                   className="block w-full border border-zinc-700 bg-black text-volt p-4 text-center text-3xl tracking-[0.5em] font-mono focus:border-volt outline-none h-16"
@@ -138,6 +170,9 @@ const LoginScreen: React.FC = () => {
                   required
                   autoFocus
                 />
+                <div className="text-center mt-3">
+                    <p className="text-xs text-zinc-500">Demo Code: <span className="text-white font-bold bg-zinc-800 px-2 py-0.5 rounded">1234</span></p>
+                </div>
               </div>
 
               {error && <div className="flex items-center gap-2 text-red-500 text-xs font-bold bg-red-900/10 p-3 border border-red-900/30"><AlertCircle size={14} />{error}</div>}

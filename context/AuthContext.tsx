@@ -28,18 +28,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Initialize Session
   useEffect(() => {
     const initSession = async () => {
-      if (isSupabaseConfigured()) {
-        const { data: { session } } = await supabase!.auth.getSession();
-        if (session?.user) {
-          const { data: profile } = await api.auth.getProfile(session.user.id);
-          if (profile) setUser(profile as UserProfile);
+      try {
+        if (isSupabaseConfigured()) {
+          const { data: { session } } = await supabase!.auth.getSession();
+          if (session?.user) {
+            const { data: profile } = await api.auth.getProfile(session.user.id);
+            if (profile) setUser(profile as UserProfile);
+          }
+        } else {
+          // Load from local storage in demo mode
+          const stored = window.localStorage.getItem('turfex_user');
+          if (stored) setUser(JSON.parse(stored));
         }
-      } else {
-        // Load from local storage in demo mode
-        const stored = window.localStorage.getItem('turfex_user');
-        if (stored) setUser(JSON.parse(stored));
+      } catch (error) {
+        console.error("Auth init error:", error);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
     initSession();
 
@@ -58,19 +63,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const login = async (phone: string) => {
-    setIsLoading(true);
-    
-    // DEMO MODE BYPASS
+    // DEMO MODE: Simulate sending OTP only
     if (!isSupabaseConfigured()) {
-        setTimeout(() => {
-            let mockUser = MOCK_USER;
-            if (phone.endsWith('9')) mockUser = MOCK_OWNER_USER;
-            if (phone.endsWith('8')) mockUser = { ...MOCK_OWNER_USER, id: 'm1', full_name: 'Manager Mike', user_type: UserType.MANAGER };
-            
-            setUser(mockUser);
-            window.localStorage.setItem('turfex_user', JSON.stringify(mockUser));
-            setIsLoading(false);
-        }, 1000);
+        await new Promise(resolve => setTimeout(resolve, 800));
         return;
     }
 
@@ -80,11 +75,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.error('Login error:', error);
         alert('Error sending OTP: ' + error.message);
     }
-    setIsLoading(false);
   };
 
   const verifyOtp = async (phone: string, token: string): Promise<boolean> => {
-      if (!isSupabaseConfigured()) return true; // Already handled in login mock
+      // DEMO MODE: Verify and Set User
+      if (!isSupabaseConfigured()) {
+          await new Promise(resolve => setTimeout(resolve, 800));
+          
+          if (token === '1234' || token === '123456') {
+              let mockUser = MOCK_USER;
+              if (phone.endsWith('9')) mockUser = MOCK_OWNER_USER;
+              if (phone.endsWith('8')) mockUser = { ...MOCK_OWNER_USER, id: 'm1', full_name: 'Manager Mike', user_type: UserType.MANAGER };
+              
+              setUser(mockUser);
+              try {
+                window.localStorage.setItem('turfex_user', JSON.stringify(mockUser));
+              } catch (e) {
+                console.warn('LocalStorage failed', e);
+              }
+              return true;
+          }
+          return false;
+      }
 
       const { data, error } = await api.auth.verifyOtp(phone, token);
       if (error || !data.session?.user) {
@@ -114,8 +126,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               referral_code: Math.random().toString(36).substring(7),
               stats: { matches_played: 0, matches_won: 0, man_of_the_match: 0, total_score: 0, mvp_badges: 0 }
           };
-          // Insert logic should be here, but usually handled by DB triggers in Supabase
-          // For now, let's assume we update it locally or via API
           setUser(newProfile);
       } else {
           setUser(profile as UserProfile);

@@ -7,9 +7,10 @@ import { SPORTS_ICONS } from '../../../lib/constants';
 interface MyTeamsListProps {
   teams: Team[];
   onCreateTeam: () => void;
+  onTeamClick?: (team: Team) => void;
 }
 
-const MyTeamsList: React.FC<MyTeamsListProps> = ({ teams, onCreateTeam }) => {
+const MyTeamsList: React.FC<MyTeamsListProps> = ({ teams, onCreateTeam, onTeamClick }) => {
   return (
     <div className="bg-white dark:bg-darkcard p-6 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm">
        <div className="flex justify-between items-center mb-4">
@@ -26,7 +27,11 @@ const MyTeamsList: React.FC<MyTeamsListProps> = ({ teams, onCreateTeam }) => {
        
        <div className="flex gap-4 overflow-x-auto pb-4 -mx-2 px-2 scrollbar-hide snap-x">
            {teams.length > 0 ? teams.map(team => (
-               <div key={team.id} className="min-w-[240px] bg-gray-50 dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 snap-start hover:border-electric dark:hover:border-electric transition-colors group cursor-pointer shadow-sm">
+               <div 
+                 key={team.id} 
+                 onClick={() => onTeamClick && onTeamClick(team)}
+                 className="min-w-[240px] bg-gray-50 dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 snap-start hover:border-electric dark:hover:border-electric transition-colors group cursor-pointer shadow-sm"
+               >
                    <div className="flex items-center gap-3 mb-4">
                        <img src={team.logo_url} className="w-12 h-12 rounded-full bg-white object-cover shadow-sm border-2 border-white dark:border-gray-600 group-hover:scale-110 transition-transform" alt={team.name} />
                        <div className="min-w-0">

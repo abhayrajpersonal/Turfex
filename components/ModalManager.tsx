@@ -4,7 +4,7 @@ import { Loader2 } from 'lucide-react';
 import { useUI } from '../context/UIContext';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
-import { MOCK_WALLET_TRANSACTIONS, MOCK_SEARCHABLE_USERS, MOCK_BRACKET } from '../lib/mockData';
+import { MOCK_WALLET_TRANSACTIONS, MOCK_BRACKET } from '../lib/mockData';
 import { Booking, Sport, Team, Tournament, CorporateDetails } from '../lib/types';
 import Confetti from './common/Confetti';
 
@@ -29,7 +29,9 @@ const DailySpinModal = React.lazy(() => import('./common/DailySpinModal'));
 const GalleryModal = React.lazy(() => import('./GalleryModal'));
 const SupportModal = React.lazy(() => import('./SupportModal'));
 const EmergencyModal = React.lazy(() => import('./EmergencyModal'));
-const ReportPlayerModal = React.lazy(() => import('./ReportPlayerModal')); // New Import
+const ReportPlayerModal = React.lazy(() => import('./ReportPlayerModal'));
+const TeamDetailsModal = React.lazy(() => import('./social/TeamDetailsModal'));
+const FriendsModal = React.lazy(() => import('./social/FriendsModal'));
 
 const ModalLoader = () => (
   <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/10 backdrop-blur-sm">
@@ -316,6 +318,16 @@ const ModalManager: React.FC = () => {
       )}
       {activeModal === 'report_player' && (
         <ReportPlayerModal onClose={handleClose} onSubmit={handleReportPlayer} />
+      )}
+      {activeModal === 'team_details' && modalData && (
+        <TeamDetailsModal 
+            team={modalData} 
+            onClose={handleClose} 
+            onAddMember={() => showToast("Invite link copied to clipboard", "success")} 
+        />
+      )}
+      {activeModal === 'friends' && (
+        <FriendsModal onClose={handleClose} />
       )}
     </Suspense>
   );

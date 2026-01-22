@@ -134,6 +134,66 @@ export const MOCK_TURFS: Turf[] = [
     has_coach: false,
     has_referee: true,
     rental_equipment: []
+  },
+  // Bhavnagar Locations
+  {
+    id: 't4',
+    owner_id: 'o4',
+    name: 'Bhavnagar Sports Arena',
+    location: 'Waghawadi Road, Bhavnagar',
+    city: 'Bhavnagar',
+    sports_supported: [Sport.FOOTBALL, Sport.CRICKET],
+    price_per_hour: 1000,
+    rating: 4.6,
+    images: ['https://picsum.photos/500/300?random=5'],
+    facilities: ['Parking', 'Floodlights', 'Cafe'],
+    lat: 21.7589,
+    lng: 72.1437,
+    is_verified: true,
+    has_coach: true,
+    has_referee: true,
+    weather_condition: 'Sunny',
+    rental_equipment: [
+      { id: 'eq5', name: 'Cricket Bat (English Willow)', price: 150, icon: '🏏' }
+    ]
+  },
+  {
+    id: 't5',
+    owner_id: 'o5',
+    name: 'Victoria Greens',
+    location: 'Near Victoria Park, Bhavnagar',
+    city: 'Bhavnagar',
+    sports_supported: [Sport.FOOTBALL, Sport.TENNIS],
+    price_per_hour: 900,
+    rating: 4.4,
+    images: ['https://picsum.photos/500/300?random=6'],
+    facilities: ['Changing Rooms', 'Water', 'Natural Grass'],
+    lat: 21.7460,
+    lng: 72.1340,
+    is_verified: false,
+    has_coach: false,
+    has_referee: true,
+    rental_equipment: []
+  },
+  {
+    id: 't6',
+    owner_id: 'o6',
+    name: 'Gohilwad Smash Center',
+    location: 'Kalanala, Bhavnagar',
+    city: 'Bhavnagar',
+    sports_supported: [Sport.BADMINTON, Sport.PICKLEBALL],
+    price_per_hour: 600,
+    rating: 4.7,
+    images: ['https://picsum.photos/500/300?random=7'],
+    facilities: ['AC', 'Pro Shop', 'Lockers'],
+    lat: 21.7690,
+    lng: 72.1580,
+    is_verified: true,
+    has_coach: true,
+    has_referee: false,
+    rental_equipment: [
+      { id: 'eq6', name: 'Paddle (Carbon)', price: 100, icon: '🏓' }
+    ]
   }
 ];
 

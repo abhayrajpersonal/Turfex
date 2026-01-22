@@ -1,20 +1,15 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
-import dynamic from 'next/dynamic';
-import { Search, Map, List, Filter } from 'lucide-react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import { Search, Map, List, Filter, Loader2 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useUI } from '../../context/UIContext';
 import { useAuth } from '../../context/AuthContext';
 import { Sport, FriendActivity, OpenMatch } from '../../lib/types';
 import { MOCK_FRIENDS_ACTIVITY, MOCK_COACHES } from '../../lib/mockData';
-import AIRecommendationBanner from '../../components/AIRecommendationBanner';
 import { debounce } from '../../lib/utils';
 
-// Dynamically import MapComponent to disable SSR for Leaflet
-const MapComponent = dynamic(() => import('../../components/common/MapComponent'), {
-  ssr: false,
-  loading: () => <div className="w-full h-full bg-zinc-900 animate-pulse flex items-center justify-center text-zinc-500">Loading Map...</div>
-});
+// Lazy load MapComponent to avoid SSR issues and potential next/dynamic conflicts
+const MapComponent = React.lazy(() => import('../../components/common/MapComponent'));
 
 // Refactored Components
 import DiscoverFilters from './components/DiscoverFilters';
@@ -141,9 +136,6 @@ const DiscoverScreen: React.FC = () => {
               </div>
           </div>
 
-          {/* AI Banner - New Addition */}
-          <AIRecommendationBanner user={user} />
-
           <div className="flex flex-col md:flex-row gap-4">
               <div className="relative flex-1">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={20} />
@@ -218,7 +210,9 @@ const DiscoverScreen: React.FC = () => {
                 <TurfGrid turfs={filteredTurfs} isLoading={isLoading} onBook={handleBookClick} onClearFilters={resetFilters} />
             ) : (
                 <div className="h-[600px] overflow-hidden relative border border-zinc-800">
-                    <MapComponent turfs={filteredTurfs} friends={MOCK_FRIENDS_ACTIVITY} onMarkerClick={(turf) => handleBookClick(turf)} />
+                    <Suspense fallback={<div className="w-full h-full bg-zinc-900 animate-pulse flex items-center justify-center text-zinc-500"><Loader2 className="animate-spin mr-2" /> Loading Map...</div>}>
+                        <MapComponent turfs={filteredTurfs} friends={MOCK_FRIENDS_ACTIVITY} onMarkerClick={(turf: any) => handleBookClick(turf)} />
+                    </Suspense>
                 </div>
             )}
 

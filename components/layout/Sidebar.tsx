@@ -68,7 +68,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           )}
         </nav>
 
-        <div className="px-6 mb-6">
+        <div className="px-6 mb-4">
             <button 
                 onClick={() => setActiveModal('daily_spin')}
                 className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-zinc-900 dark:to-zinc-900 border border-gray-200 dark:border-zinc-800 text-midnight dark:text-white hover:border-blue-500 dark:hover:border-volt hover:text-blue-600 dark:hover:text-volt transition-colors text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm"
@@ -76,6 +76,28 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <Gift size={16} /> Daily Rewards
             </button>
         </div>
+
+        {/* Gold Subscription Banner */}
+        {user?.tier === UserTier.FREE && (
+            <div className="px-6 mb-6">
+                <div 
+                    onClick={onUpgrade}
+                    className="p-4 rounded-xl bg-gradient-to-br from-yellow-400 to-orange-500 text-black shadow-lg relative overflow-hidden group cursor-pointer border border-yellow-300 transform transition-all hover:scale-[1.02] active:scale-95"
+                >
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/20 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+                    <div className="relative z-10">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="font-black uppercase tracking-widest text-[10px] bg-black/10 px-2 py-0.5 rounded">Pro Access</span>
+                            <Crown size={16} fill="black" />
+                        </div>
+                        <h4 className="font-display font-bold text-lg leading-tight mb-3">Upgrade to Gold</h4>
+                        <button className="bg-black text-white text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 group-hover:bg-zinc-800 transition-colors">
+                            View Benefits <span className="text-yellow-400">→</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
 
         <div className="p-6 border-t border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-zinc-950 transition-colors">
            <div className="flex items-center justify-between mb-6">
